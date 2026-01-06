@@ -1,6 +1,6 @@
 export const PlayerInventory = {
     CryptoAmount: 500.0,
-    EnergyLevel: 100.0,
+    EnergyLevel: 50.0,
     EnergyMax: 200.0,      // Nouveau : Limite de base
     OxygenLevel: 100.0,
     OxygenMax: 200.0,      // Nouveau : Limite de base
