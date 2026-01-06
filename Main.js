@@ -245,7 +245,7 @@ class MyGame {
             this.ShowTutorialPopup("Formation Initiale 🎓", "Bienvenue, Cadet. Vous allez apprendre à gérer une station stellaire. La survie de l'équipage dépend de vous.", "0");
 
             PlayerInventory.CryptoAmount = 500;
-            PlayerInventory.EnergyLevel = 100;
+            PlayerInventory.EnergyLevel = 50;
             PlayerInventory.OxygenLevel = 100;
             PlayerInventory.FoodLevel = 100;
             this.Start();
@@ -505,7 +505,7 @@ class MyGame {
         if (!this.isGameStarted || this.isGameOver) return;
 
         // DEV: Tuto Avancé Shortcut
-        if (Input.GetKeyDown("KeyA")) {
+        if (Input.GetKeyDown("KeyQ")) {
             window.startAdvancedTutorial();
         }
 
@@ -515,8 +515,8 @@ class MyGame {
         if (Input.GetKey("Space") && Antigravity.mouseClicked) {
             const dx = Antigravity.mousePos.x - this.lastMousePos.x;
             const dy = Antigravity.mousePos.y - this.lastMousePos.y;
-            Antigravity.camera.Position.x += dx;
-            Antigravity.camera.Position.y += dy;
+            Antigravity.camera.Position.x -= dx;
+            Antigravity.camera.Position.y -= dy;
         }
         this.lastMousePos.x = Antigravity.mousePos.x;
         this.lastMousePos.y = Antigravity.mousePos.y;
@@ -1224,7 +1224,7 @@ class MyGame {
         });
 
         // Centrer la caméra
-        const centerPos = GridManager.GridToWorld(1, 1);
+        const centerPos = GridManager.GridToWorld(-1, -1);
         Antigravity.camera.Position.x = centerPos.x;
         Antigravity.camera.Position.z = centerPos.z;
     }
