@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity | Space Management Tycoon</title>
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="Gérez votre station spatiale, minez de la crypto et optimisez votre énergie dans ce simulateur isométrique futuriste.">
+    <meta name="author" content="Antigravity AI">
+
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="ui-overlay">
+        <!-- Main Menu Modal -->
+        <div id="main-menu" class="modal">
+            <div class="modal-content">
+                <h1 class="accent">STARSHIP FRONTIER</h1>
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 20px;">
+                    <button onclick="window.startGame(false)" style="width: 250px;">COMMENCER LE TUTORIEL</button>
+                    <button onclick="window.startGame(true)"
+                        style="width: 250px; background: #00f2ff; color: black;">MODE SURVIE</button>
+                </div>
+                <div
+                    style="position: absolute; bottom: 20px; right: 20px; opacity: 0.5; font-size: 0.8rem; font-family: 'Inter', sans-serif;">
+                    version alpha 0.1
+                </div>
+            </div>
+        </div>
+
+        <header>
+            <h1 id="game-title">STARSHIP <span class="accent">FRONTIER</span></h1>
+            <div class="controls-hint">
+                <span>🖱️ Clic gauche : Placer</span>
+                <span>🛒 Shop : Sélectionnez un module</span>
+            </div>
+            <div id="goal-hud" class="hud-item"
+                style="position: absolute; top: 20px; right: 40px; border-color: #ffcc00; display: none; pointer-events: auto; z-index: 50;">
+                <span class="label" style="color: #ffcc00;">MISSION EN COURS</span>
+                <span class="value" id="goal-text" style="font-size: 0.9rem; color: #fff;">Survivre</span>
+                <div id="goal-progress"
+                    style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 5px;">
+                    <div id="goal-bar" style="width: 0%; height: 100%; background: #ffcc00;"></div>
+                </div>
+            </div>
+        </header>
+
+        <div id="game-container">
+            <!-- Le canvas sera injecté ici par engine.js -->
+        </div>
+
+        <div id="hud">
+            <div class="hud-item" id="crypto-display">
+                <span class="label">CRYPTO</span>
+                <span class="value" id="crypto-val">1000</span>
+            </div>
+            <div class="hud-item" id="energy-display">
+                <span class="label">ÉNERGIE</span>
+                <span class="value" id="energy-val">0/0 (100%)</span>
+            </div>
+            <div class="hud-item" id="oxygen-display">
+                <span class="label">OXYGÈNE</span>
+                <span class="value" id="oxygen-val">0%</span>
+            </div>
+            <div class="hud-item" id="pop-display">
+                <span class="label">HABITANTS</span>
+                <span class="value" id="pop-val">0</span>
+                <span id="pop-bonus" style="font-size: 0.8em; color: #00ff88; margin-left: 5px;">(+0%)</span>
+            </div>
+            <div class="hud-item" id="food-display">
+                <span class="label">NOURRITURE</span>
+                <span class="value" id="food-val">0</span>
+            </div>
+            <div class="hud-item" id="module-display">
+                <span class="label">MODULES</span>
+                <span class="value" id="module-val">0/0</span>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h1 class="accent">MISSION ÉCHOUÉE</h1>
+                <p id="death-reason">Raison de la défaite</p>
+                <button onclick="location.reload()">RECOMMENCER</button>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="tutorial-success" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h1 style="color: #00ff88;">FÉLICITATIONS !</h1>
+                <p>Vous avez maîtrisé les bases de la gestion orbitale.</p>
+                <p style="font-size: 0.9em; opacity: 0.8;">Nouveaux modules débloqués : Serre, Batterie, Antenne.</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button onclick="window.startSandbox()">MODE SURVIE (SANS TUTO)</button>
+                    <button onclick="location.reload()">RESTER ICI</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Start Hint -->
+        <div id="start-hint" class="hint-popup" style="display: none;">
+            <div class="hint-content">
+                <span class="hint-icon" id="hint-icon">⚠️</span>
+                <div class="hint-text">
+                    <p id="hint-title" style="margin:0; font-weight: bold; color: #ff6400;">Survie Initiale</p>
+                    <p id="hint-desc" style="margin:5px 0 0 0;">Vos réserves baissent ! <br>Achetez <strong>2 Réservoirs
+                            à Oxygène</strong> dans le magasin.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boon Modal -->
+        <div id="boon-modal" class="modal" style="display: none; background: rgba(0,0,0,0.95);">
+            <div class="modal-content" style="border-color: #ffcc00; min-width: 500px;">
+                <h1 style="color: #ffcc00;">PRIME DE SECTEUR REÇUE</h1>
+                <p>La Fédération récompense votre efficacité. Choisissez un atout :</p>
+                <div id="boon-choices" style="display: flex; gap: 20px; justify-content: center; margin-top: 30px;">
+                    <!-- Les boutons de boons seront injectés ici -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Choice Modal -->
+        <div id="choice-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="border-color: #00f2ff;">
+                <h1 id="choice-title" class="accent">SIGNAL DÉTECTÉ</h1>
+                <p id="choice-desc">Voulez-vous intercepter le signal inconnu ?</p>
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                    <button id="choice-yes" style="background: #00ff88; color: black; width: 120px;">OUI</button>
+                    <button id="choice-no" style="background: #ff4444; color: white; width: 120px;">NON</button>
+                </div>
+            </div>
+        </div>
+        <!-- Starting Gift Modal -->
+        <div id="gift-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 500px;">
+                <h1 class="accent">HÉRITAGE DE MISSION</h1>
+                <p>Choisissez un module de base à ajouter <strong>définitivement</strong> à vos futurs départs de
+                    mission.</p>
+                <div id="gift-choices" style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
+                    <!-- Rempli par JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Merchant Modal -->
+        <div id="merchant-modal" class="modal" style="display: none;">
+            <div class="modal-content"
+                style="max-width: 600px; border-color: #ffcc00; background: rgba(20, 20, 20, 0.95);">
+                <h1 class="accent" style="color: #ffcc00;">🛰️ CARGO MARCHAND</h1>
+                <p>Un vaisseau de passage propose des échanges de ressources.</p>
+                <div id="trade-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                    <!-- Rempli par JS -->
+                </div>
+                <button onclick="document.getElementById('merchant-modal').style.display='none';"
+                    style="margin-top: 20px; background: #ff4444; color: white; width: 100%;">FERMER</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script principal du jeu -->
+    <script type="module" src="Main.js"></script>
+</body>
+
+</html>

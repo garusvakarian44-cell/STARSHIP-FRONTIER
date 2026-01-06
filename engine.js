@@ -1,0 +1,263 @@
+export const Color = {
+    White: 'white',
+    Green: 'green',
+    Yellow: 'yellow',
+    Blue: 'blue',
+    Gray: 'gray',
+    Purple: 'purple',
+    Black: 'black'
+};
+
+export class Vector3 {
+    constructor(x = 0, y = 0, z = 0) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+}
+
+export class Rect {
+    constructor(x, y, width, height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+}
+
+class Engine {
+    constructor() {
+        this.canvas = document.createElement('canvas');
+        const container = document.getElementById('game-container') || document.body;
+        container.appendChild(this.canvas);
+
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+
+        this.mousePos = { x: 0, y: 0 };
+        this.mouseClicked = false;
+        this.mouseWheel = 0;
+        this.keys = {};
+
+        window.addEventListener('mousemove', (e) => {
+            this.mousePos.x = e.clientX;
+            this.mousePos.y = e.clientY;
+        });
+
+        window.addEventListener('mousedown', () => {
+            this.mouseClicked = true;
+        });
+
+        window.addEventListener('mouseup', () => {
+            this.mouseClicked = false;
+        });
+
+        window.addEventListener('wheel', (e) => {
+            this.mouseWheel = e.deltaY;
+        }, { passive: true });
+
+        window.addEventListener('keydown', (e) => {
+            this.keys[e.code] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            this.keys[e.code] = false;
+        });
+
+        this.camera = {
+            IsOrthographic: true,
+            Rotation: new Vector3(35.264, 45, 0),
+            Position: new Vector3(this.width / 2, this.height / 2, 0)
+        };
+    }
+
+    resize() {
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+        if (this.camera) {
+            this.camera.Position = new Vector3(this.width / 2, this.height / 2, 0);
+        }
+    }
+
+    GetMouseToWorldPlane() {
+        // Simple mapping for isometric 2D
+        // This is a placeholder since the actual projection depends on the camera
+        const x = this.mousePos.x - this.camera.Position.x;
+        const y = this.mousePos.y - this.camera.Position.y;
+
+        // Reverse isometric projection (approximate)
+        const tileW = 2.0; // matching GridManager default
+        const tileH = 1.0;
+
+        // z = (y / (tileH/2) + x / (tileW/2)) / 2
+        // x_grid = (y / (tileH/2) - x / (tileW/2)) / 2
+
+        const worldX = (y / (tileH / 2) + x / (tileW / 2)) * 10; // scale factor
+        const worldZ = (y / (tileH / 2) - x / (tileW / 2)) * 10;
+
+        return { X: x / 20, Z: y / 20 }; // Temporary simple mapping to match GridManager scale
+    }
+
+    GetMouseButtonDown(button) {
+        if (button === 0 && this.mouseClicked) {
+            this.mouseClicked = false; // Reset to simulate "Down" event once
+            return true;
+        }
+        return false;
+    }
+
+    Clear() {
+        this.ctx.fillStyle = '#1a1a1a';
+        this.ctx.fillRect(0, 0, this.width, this.height);
+    }
+}
+
+export const Antigravity = new Engine();
+
+export const Draw = {
+    IsometricCube: function (pos, color, label, strokeColor = 'white') {
+        const ctx = Antigravity.ctx;
+        const centerX = Antigravity.camera.Position.x + pos.x * 40;
+        const centerY = Antigravity.camera.Position.y + pos.z * 40;
+
+        const w = 40;
+        const h = 20;
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY - h);
+        ctx.lineTo(centerX + w, centerY);
+        ctx.lineTo(centerX, centerY + h);
+        ctx.lineTo(centerX - w, centerY);
+        ctx.closePath();
+
+        if (color !== 'transparent') ctx.fill();
+
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        if (label) {
+            const oldStroke = ctx.strokeStyle;
+            const oldWidth = ctx.lineWidth;
+            ctx.fillStyle = 'white';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.strokeText(label, centerX, centerY);
+            ctx.fillText(label, centerX, centerY);
+            ctx.strokeStyle = oldStroke;
+            ctx.lineWidth = oldWidth;
+        }
+    },
+
+    IsometricImage: function (pos, imagePath, label) {
+        const ctx = Antigravity.ctx;
+        const centerX = Antigravity.camera.Position.x + pos.x * 40;
+        const centerY = Antigravity.camera.Position.y + pos.z * 40;
+
+        // On charge l'image si elle n'est pas déjà en cache
+        if (!this._imageCache) this._imageCache = {};
+        if (!this._imageCache[imagePath]) {
+            const img = new Image();
+            img.src = imagePath;
+            this._imageCache[imagePath] = img;
+        }
+
+        const img = this._imageCache[imagePath];
+        if (img.complete && img.naturalWidth > 0) {
+            // L'image fait 80x40 à la base (le losange)
+            // L'ancrage doit être le milieu bas du losange de base
+            const drawX = centerX - 40;
+            const drawY = centerY - (img.height - 20);
+            ctx.drawImage(img, drawX, drawY);
+        } else if (img.complete && img.naturalWidth === 0) {
+            // Image cassée : on affiche un cube de secours pour ne pas planter le jeu
+            this.IsometricCube(pos, 'rgba(255,0,0,0.5)', "Erreur Image");
+        } else {
+            // En cours de chargement
+            this.IsometricCube(pos, 'rgba(0,255,255,0.1)', "Chargement...");
+        }
+
+        if (label) {
+            ctx.fillStyle = 'white';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.strokeText(label, centerX, centerY);
+            ctx.fillText(label, centerX, centerY);
+        }
+    },
+
+    Window: function (rect, title) {
+        const ctx = Antigravity.ctx;
+        ctx.fillStyle = 'rgba(20, 25, 35, 0.9)';
+        ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+        ctx.strokeStyle = '#00f2ff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+
+        ctx.fillStyle = '#00f2ff';
+        ctx.font = 'bold 12px "Outfit", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(title, rect.x + 15, rect.y + 25);
+    },
+
+    Button: function (rect, text) {
+        const ctx = Antigravity.ctx;
+        const isHover = Antigravity.mousePos.x > rect.x && Antigravity.mousePos.x < rect.x + rect.width &&
+            Antigravity.mousePos.y > rect.y && Antigravity.mousePos.y < rect.y + rect.height;
+
+        // Button Background
+        ctx.fillStyle = isHover ? 'rgba(0, 242, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)';
+        ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+        // Button Border
+        ctx.strokeStyle = isHover ? '#00f2ff' : 'rgba(255, 255, 255, 0.1)';
+        ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+
+        // Button Text
+        ctx.fillStyle = isHover ? '#fff' : '#a0a0a0';
+        ctx.font = '11px "Inter", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, rect.x + rect.width / 2, rect.y + rect.height / 2 + 5);
+
+        if (isHover && Antigravity.mouseClicked) {
+            Antigravity.mouseClicked = false;
+            return true;
+        }
+        return false;
+    }
+};
+
+export const UI = {
+    DrawText: function (rect, text) {
+        const ctx = Antigravity.ctx;
+        ctx.fillStyle = 'white';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(text, rect.x, rect.y + 15);
+    }
+};
+
+export const Input = {
+    GetMouseToWorldPlane: () => {
+        // Coordonnées relatives au centre de l'écran (caméra)
+        const relX = Antigravity.mousePos.x - Antigravity.camera.Position.x;
+        const relY = Antigravity.mousePos.y - Antigravity.camera.Position.y;
+
+        // Inversion de la projection isométrique :
+        // Les constantes 40 et 20 correspondent à (TileWidth/2 * 40) et (TileHeight/2 * 40)
+        const gridX = (relX / 40 + relY / 20) / 2;
+        const gridZ = (relY / 20 - relX / 40) / 2;
+
+        return { X: gridX, Z: gridZ };
+    },
+    GetMouseButtonDown: (btn) => Antigravity.GetMouseButtonDown(btn),
+    GetKey: (code) => Antigravity.keys[code] === true
+};
