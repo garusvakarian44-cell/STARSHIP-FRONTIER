@@ -145,7 +145,6 @@ export class JumpDrive extends BaseModule {
         this.CryptoCost = 0; // Special
     }
     Render(draw) {
-        // Un cube blanc pur brillant pour le saut
-        draw.IsometricCube(this.Position, '#ffffff', "SAUTER !", 'cyan');
+        draw.IsometricImage(this.Position, 'coeurTP.png', "SAUTER !", 'cyan');
     }
 }
