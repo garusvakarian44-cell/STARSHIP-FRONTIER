@@ -93,20 +93,6 @@ export class RadioAntenna extends BaseModule {
         super();
         this.Name = "Antenne Comm";
         this.CryptoCost = 150;
-        this.EnergySpike = 20.0; // Consomme 20 d'énergie par envoi
-        this.CryptoGain = 200;   // Rapport 200 Crypto
-        this.Timer = 30;         // Toutes les 30 secondes
-        this.CurrentTimer = 30;
-    }
-    Update(deltaTime) {
-        this.CurrentTimer -= deltaTime;
-        if (this.CurrentTimer <= 0) {
-            if (PlayerInventory.EnergyLevel >= this.EnergySpike) {
-                PlayerInventory.EnergyLevel -= this.EnergySpike;
-                PlayerInventory.CryptoAmount += this.CryptoGain * PlayerInventory.CryptoEfficiency;
-                this.CurrentTimer = 30;
-            }
-        }
     }
     Render(draw) {
         draw.IsometricImage(this.Position, 'antenne.png', "Antenne Comm");
@@ -145,6 +131,6 @@ export class JumpDrive extends BaseModule {
         this.CryptoCost = 0; // Special
     }
     Render(draw) {
-        draw.IsometricImage(this.Position, 'coeurTP.png', "SAUTER !", 'cyan');
+        draw.IsometricImage(this.Position, 'coeurTP.png');
     }
 }

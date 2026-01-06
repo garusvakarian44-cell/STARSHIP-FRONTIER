@@ -15,6 +15,12 @@ class MyGame {
         this.tutorialTimer = 0;
         this.lastMousePos = { x: 0, y: 0 };
         this.isGamePaused = false;
+        this.mouseIsDown = false;
+
+        // Setup mouse tracking for camera drag (separate from Antigravity.mouseClicked)
+        window.addEventListener('mousedown', () => { this.mouseIsDown = true; });
+        window.addEventListener('mouseup', () => { this.mouseIsDown = false; });
+
         this.scienceTimer = 60; // Production de science toutes les minutes
         this.isJumpDriveSpawned = false;
         this.currentScale = 1.0;
@@ -258,7 +264,9 @@ class MyGame {
 
     Start() {
         Antigravity.camera.IsOrthographic = true;
+        Antigravity.camera.IsOrthographic = true;
         Antigravity.camera.Rotation = new Vector3(35.264, 45, 0);
+        this.CenterGridOnScreen();
 
         const starterSolar = new SolarPanel();
         starterSolar.GridX = 0; starterSolar.GridZ = 0;
@@ -512,14 +520,29 @@ class MyGame {
 
         // --- GESTION DE LA CAMÉRA (ESPACE + CLIC) ---
         // On permet de bouger la caméra même en pause pour observer la station
-        if (Input.GetKey("Space") && Antigravity.mouseClicked) {
+        // Note: "Space" is the key code for spacebar
+        const isSpacePressed = Input.GetKey("Space");
+
+        if (isSpacePressed && this.mouseIsDown) {
             const dx = Antigravity.mousePos.x - this.lastMousePos.x;
             const dy = Antigravity.mousePos.y - this.lastMousePos.y;
-            Antigravity.camera.Position.x -= dx;
-            Antigravity.camera.Position.y -= dy;
+            Antigravity.camera.Position.x += dx;
+            Antigravity.camera.Position.y += dy;
         }
         this.lastMousePos.x = Antigravity.mousePos.x;
         this.lastMousePos.y = Antigravity.mousePos.y;
+
+        // --- AUTO-CENTRAGE CAMÉRA TUTORIEL AVANCÉ ---
+        // Pendant le tutoriel avancé, centrer automatiquement sur le module focusé
+        if (this.tutorialStep >= 100 && this.tutorialStep < 200 && this.focusedModule) {
+            // Centre la caméra sur le module en glow
+            const targetX = Antigravity.width / 2 + this.focusedModule.Position.x * 40;
+            const targetY = Antigravity.height / 2 + this.focusedModule.Position.z * 40;
+
+            // Interpolation douce pour un mouvement fluide
+            Antigravity.camera.Position.x += (targetX - Antigravity.camera.Position.x) * 0.1;
+            Antigravity.camera.Position.y += (targetY - Antigravity.camera.Position.y) * 0.1;
+        }
 
         // 1. BILAN DES RESSOURCES (Déclarés ici pour être vus par le HUD même en pause)
         let totalEnergyProd = 0;
@@ -540,7 +563,7 @@ class MyGame {
         }
         this.currentPopulation = totalPopulation;
         const popBonus = 1 + (Math.max(0, totalPopulation - 2) * 0.05);
-        const currentModules = this.myBase.length;
+        const currentModules = this.myBase.filter(m => !(m instanceof JumpDrive)).length;
         const moduleLimit = 4 + (totalPopulation * 3);
 
         if (!this.isGamePaused) {
@@ -947,7 +970,7 @@ class MyGame {
 
         // 5. INTERFACE
         // 5. INTERFACE
-        if (this.tutorialStep < 100 || this.tutorialStep >= 200) {
+        if (this.tutorialStep < 100 || this.tutorialStep > 200) {
             this.shop.RenderShopWindow(Draw, UI, this.tutorialStep);
         }
 
@@ -1016,7 +1039,9 @@ class MyGame {
         const mainHUD = document.getElementById('hud');
         const goalHUD = document.getElementById('goal-hud');
 
-        if (this.tutorialStep >= 100 && this.tutorialStep < 200) {
+        // Logic refined: We hide HUD if we are in advanced tutorial (>= 100) and NOT finished (<= 200)
+        // Step 200 is the final popup. We want HUD hidden there too.
+        if (this.tutorialStep >= 100 && this.tutorialStep <= 200) {
             // Tuto avancé : on masque tout le HUD de gestion et le shop
             if (shopBtn) shopBtn.style.display = 'none';
             if (mainHUD) mainHUD.style.display = 'none';
@@ -1223,10 +1248,8 @@ class MyGame {
             }
         });
 
-        // Centrer la caméra
-        const centerPos = GridManager.GridToWorld(-1, -1);
-        Antigravity.camera.Position.x = centerPos.x;
-        Antigravity.camera.Position.z = centerPos.z;
+        // Centrer la grille par rapport à l'écran
+        this.CenterGridOnScreen();
     }
 
     NextTutorialStep() {
@@ -1278,6 +1301,12 @@ class MyGame {
             Antigravity.camera.Position.z = target.Position.z;
             this.focusedModule = target;
         }
+    }
+
+    CenterGridOnScreen() {
+        Antigravity.camera.Position.x = Antigravity.width / 2;
+        Antigravity.camera.Position.y = Antigravity.height / 2;
+        Antigravity.camera.Position.z = 0;
     }
 }
 
