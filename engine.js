@@ -57,12 +57,17 @@ class Engine {
             this.mouseWheel = e.deltaY;
         }, { passive: true });
 
+        this.keys = {};
+        this.keysDown = {};
+
         window.addEventListener('keydown', (e) => {
+            if (!this.keys[e.code]) this.keysDown[e.code] = true;
             this.keys[e.code] = true;
         });
 
         window.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
+            this.keysDown[e.code] = false;
         });
 
         this.camera = {
@@ -104,6 +109,14 @@ class Engine {
     GetMouseButtonDown(button) {
         if (button === 0 && this.mouseClicked) {
             this.mouseClicked = false; // Reset to simulate "Down" event once
+            return true;
+        }
+        return false;
+    }
+
+    GetKeyDown(code) {
+        if (this.keysDown[code]) {
+            this.keysDown[code] = false;
             return true;
         }
         return false;
@@ -196,16 +209,37 @@ export const Draw = {
 
     Window: function (rect, title) {
         const ctx = Antigravity.ctx;
-        ctx.fillStyle = 'rgba(20, 25, 35, 0.9)';
+
+        // Background - Glass effect
+        ctx.fillStyle = 'rgba(10, 15, 25, 0.95)';
         ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
-        ctx.strokeStyle = '#00f2ff';
+
+        // Main Glow Border
+        ctx.strokeStyle = 'rgba(0, 242, 255, 0.5)';
         ctx.lineWidth = 1;
         ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+
+        // Corner Accents (Futuristic detail)
+        ctx.strokeStyle = '#00f2ff';
+        ctx.lineWidth = 2;
+        const cl = 15; // corner length
+        // Top Left
+        ctx.beginPath(); ctx.moveTo(rect.x, rect.y + cl); ctx.lineTo(rect.x, rect.y); ctx.lineTo(rect.x + cl, rect.y); ctx.stroke();
+        // Top Right
+        ctx.beginPath(); ctx.moveTo(rect.x + rect.width - cl, rect.y); ctx.lineTo(rect.x + rect.width, rect.y); ctx.lineTo(rect.x + rect.width, rect.y + cl); ctx.stroke();
+        // Bottom Right
+        ctx.beginPath(); ctx.moveTo(rect.x + rect.width, rect.y + rect.height - cl); ctx.lineTo(rect.x + rect.width, rect.y + rect.height); ctx.lineTo(rect.x + rect.width - cl, rect.y + rect.height); ctx.stroke();
+        // Bottom Left
+        ctx.beginPath(); ctx.moveTo(rect.x + cl, rect.y + rect.height); ctx.lineTo(rect.x, rect.y + rect.height); ctx.lineTo(rect.x, rect.y + rect.height - cl); ctx.stroke();
+
+        // Title Bar Area
+        ctx.fillStyle = 'rgba(0, 242, 255, 0.1)';
+        ctx.fillRect(rect.x, rect.y, rect.width, 35);
 
         ctx.fillStyle = '#00f2ff';
         ctx.font = 'bold 12px "Outfit", sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(title, rect.x + 15, rect.y + 25);
+        ctx.fillText(title.toUpperCase(), rect.x + 15, rect.y + 22);
     },
 
     Button: function (rect, text) {
@@ -214,16 +248,21 @@ export const Draw = {
             Antigravity.mousePos.y > rect.y && Antigravity.mousePos.y < rect.y + rect.height;
 
         // Button Background
-        ctx.fillStyle = isHover ? 'rgba(0, 242, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)';
+        ctx.fillStyle = isHover ? 'rgba(0, 242, 255, 0.15)' : 'rgba(255, 255, 255, 0.03)';
         ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
 
+        // Accent Line
+        ctx.fillStyle = isHover ? '#00f2ff' : 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(rect.x, rect.y, 2, rect.height);
+
         // Button Border
-        ctx.strokeStyle = isHover ? '#00f2ff' : 'rgba(255, 255, 255, 0.1)';
+        ctx.strokeStyle = isHover ? 'rgba(0, 242, 255, 0.6)' : 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 1;
         ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
 
         // Button Text
         ctx.fillStyle = isHover ? '#fff' : '#a0a0a0';
-        ctx.font = '11px "Inter", sans-serif';
+        ctx.font = '600 11px "Inter", sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(text, rect.x + rect.width / 2, rect.y + rect.height / 2 + 5);
 
@@ -259,5 +298,6 @@ export const Input = {
         return { X: gridX, Z: gridZ };
     },
     GetMouseButtonDown: (btn) => Antigravity.GetMouseButtonDown(btn),
-    GetKey: (code) => Antigravity.keys[code] === true
+    GetKey: (code) => Antigravity.keys[code] === true,
+    GetKeyDown: (code) => Antigravity.GetKeyDown(code)
 };

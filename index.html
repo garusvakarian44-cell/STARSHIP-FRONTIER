@@ -31,10 +31,6 @@
                     <button onclick="window.startGame(true)"
                         style="width: 250px; background: #00f2ff; color: black;">MODE SURVIE</button>
                 </div>
-                <div
-                    style="position: absolute; bottom: 20px; right: 20px; opacity: 0.5; font-size: 0.8rem; font-family: 'Inter', sans-serif;">
-                    version alpha 0.1
-                </div>
             </div>
         </div>
 
@@ -45,12 +41,14 @@
                 <span>🛒 Shop : Sélectionnez un module</span>
             </div>
             <div id="goal-hud" class="hud-item"
-                style="position: absolute; top: 20px; right: 40px; border-color: #ffcc00; display: none; pointer-events: auto; z-index: 50;">
+                style="position: absolute; top: 30px; right: 30px; border-left: 2px solid #ffcc00; display: none; pointer-events: auto; z-index: 50; box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 0 10px rgba(255, 204, 0, 0.05); width: 220px;">
                 <span class="label" style="color: #ffcc00;">MISSION EN COURS</span>
-                <span class="value" id="goal-text" style="font-size: 0.9rem; color: #fff;">Survivre</span>
+                <span class="value" id="goal-text"
+                    style="font-size: 0.85rem; color: #fff; white-space: normal;">Survivre</span>
                 <div id="goal-progress"
-                    style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 5px;">
-                    <div id="goal-bar" style="width: 0%; height: 100%; background: #ffcc00;"></div>
+                    style="width: 100%; height: 3px; background: rgba(255,255,255,0.05); margin-top: 8px;">
+                    <div id="goal-bar"
+                        style="width: 0%; height: 100%; background: #ffcc00; box-shadow: 0 0 8px #ffcc00;"></div>
                 </div>
             </div>
         </header>
@@ -75,11 +73,15 @@
             <div class="hud-item" id="pop-display">
                 <span class="label">HABITANTS</span>
                 <span class="value" id="pop-val">0</span>
-                <span id="pop-bonus" style="font-size: 0.8em; color: #00ff88; margin-left: 5px;">(+0%)</span>
+                <span id="pop-bonus" style="font-size: 0.8em; margin-left: 5px;">(+0%)</span>
             </div>
             <div class="hud-item" id="food-display">
                 <span class="label">NOURRITURE</span>
                 <span class="value" id="food-val">0</span>
+            </div>
+            <div class="hud-item" id="science-display">
+                <span class="label">SCIENCE</span>
+                <span class="value" id="science-val">0</span>
             </div>
             <div class="hud-item" id="module-display">
                 <span class="label">MODULES</span>
@@ -101,10 +103,11 @@
             <div class="modal-content">
                 <h1 style="color: #00ff88;">FÉLICITATIONS !</h1>
                 <p>Vous avez maîtrisé les bases de la gestion orbitale.</p>
-                <p style="font-size: 0.9em; opacity: 0.8;">Nouveaux modules débloqués : Serre, Batterie, Antenne.</p>
                 <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button onclick="window.startSandbox()">MODE SURVIE (SANS TUTO)</button>
-                    <button onclick="location.reload()">RESTER ICI</button>
+                    <button id="success-btn" onclick="window.startSandbox()">MODE SURVIE (SANS TUTO)</button>
+                    <button
+                        onclick="document.getElementById('tutorial-success').style.display='none'; window.startAdvancedTutorial()">TUTO
+                        APPROFONDI</button>
                 </div>
             </div>
         </div>
@@ -168,10 +171,28 @@
                     style="margin-top: 20px; background: #ff4444; color: white; width: 100%;">FERMER</button>
             </div>
         </div>
+
+        <!-- Research Tree Modal -->
+        <div id="research-modal" class="modal" style="display: none; background: rgba(0,0,0,0.9);">
+            <div class="modal-content" style="max-width: 800px; border-color: #f1c40f;">
+                <h1 class="accent" style="color: #f1c40f;">🔬 ARCHIVES SCIENTIFIQUES</h1>
+                <p>Améliorez votre station grâce à la technologie. Points : <span id="research-points">0</span></p>
+                <div id="research-grid"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                    <!-- Rempli par JS -->
+                </div>
+                <button onclick="window.toggleResearch()"
+                    style="margin-top: 20px; background: #ff4444; color: white; width: 100%;">FERMER (OU 'F')</button>
+            </div>
+        </div>
     </div>
 
     <!-- Script principal du jeu -->
     <script type="module" src="Main.js"></script>
+    <div
+        style="position: absolute; bottom: 10px; right: 20px; color: rgba(255, 255, 255, 0.3); font-size: 0.8rem; font-family: 'Inter', sans-serif; pointer-events: none; z-index: 1000;">
+        version alpha 0.1
+    </div>
 </body>
 
 </html>

@@ -20,6 +20,11 @@ export const PlayerInventory = {
     isVirusActive: false,
     virusTimer: 0,
 
+    // Science & Research
+    SciencePoints: 0,
+    ScienceEfficiency: 1.0,
+    ResearchedTechs: [],
+
     Reset: function () {
         this.CryptoAmount = 500.0;
         this.EnergyLevel = 100.0;
@@ -37,6 +42,9 @@ export const PlayerInventory = {
         this.PopulationConsumption = 1.0;
         this.isVirusActive = false;
         this.virusTimer = 0;
+        this.SciencePoints = 0;
+        this.ScienceEfficiency = 1.0;
+        this.ResearchedTechs = [];
     },
 
     CanAfford: function (cost) {

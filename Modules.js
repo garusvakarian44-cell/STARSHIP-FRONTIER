@@ -1,5 +1,6 @@
 import { BaseModule } from './BaseModule.js';
 import { PlayerInventory } from './PlayerInventory.js';
+import { Antigravity } from './engine.js';
 
 export class CryptoGenerator extends BaseModule {
     constructor() {
@@ -71,7 +72,7 @@ export class Greenhouse extends BaseModule {
         this.FoodProduction = 2.0;   // Produit 2 nourriture/sec
     }
     Render(draw) {
-        draw.IsometricCube(this.Position, '#2ecc71', this.Name);
+        draw.IsometricImage(this.Position, 'serre.png', "Serre");
     }
 }
 
@@ -83,7 +84,7 @@ export class BatteryModule extends BaseModule {
         this.StorageBonus = 500; // Ajoute 500 de capacité
     }
     Render(draw) {
-        draw.IsometricCube(this.Position, '#9b59b6', this.Name);
+        draw.IsometricImage(this.Position, 'batterie.png', "Banque de Batteries");
     }
 }
 
@@ -108,7 +109,7 @@ export class RadioAntenna extends BaseModule {
         }
     }
     Render(draw) {
-        draw.IsometricCube(this.Position, '#e67e22', this.Name);
+        draw.IsometricImage(this.Position, 'antenne.png', "Antenne Comm");
     }
 }
 
@@ -120,6 +121,31 @@ export class RecyclingModule extends BaseModule {
         this.StorageBonus = 500; // Ajoute 500 de capacité d'oxygène
     }
     Render(draw) {
-        draw.IsometricCube(this.Position, '#3498db', this.Name);
+        draw.IsometricImage(this.Position, 'recyclage.png', "Unité de Recyclage");
+    }
+}
+
+export class ScienceLab extends BaseModule {
+    constructor() {
+        super();
+        this.Name = "Laboratoire";
+        this.CryptoCost = 200;
+        this.ScienceRate = 1; // 1 point par minute (géré par Main)
+        this.EnergyConsumption = 5.0;
+    }
+    Render(draw) {
+        draw.IsometricCube(this.Position, '#f1c40f', this.Name);
+    }
+}
+
+export class JumpDrive extends BaseModule {
+    constructor() {
+        super();
+        this.Name = "Cœur de Saut";
+        this.CryptoCost = 0; // Special
+    }
+    Render(draw) {
+        // Un cube blanc pur brillant pour le saut
+        draw.IsometricCube(this.Position, '#ffffff', "SAUTER !", 'cyan');
     }
 }

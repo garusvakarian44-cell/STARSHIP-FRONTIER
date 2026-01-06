@@ -1,4 +1,4 @@
-import { CryptoGenerator, SolarPanel, OxygenReserve, Dortoir, Greenhouse, BatteryModule, RadioAntenna, RecyclingModule } from './Modules.js';
+import { CryptoGenerator, SolarPanel, OxygenReserve, Dortoir, Greenhouse, BatteryModule, RadioAntenna, RecyclingModule, ScienceLab } from './Modules.js';
 import { PlayerInventory } from './PlayerInventory.js';
 import { Antigravity } from './engine.js';
 
@@ -12,7 +12,8 @@ export class ShopManager {
             new Greenhouse(),
             new BatteryModule(),
             new RecyclingModule(),
-            new RadioAntenna()
+            new RadioAntenna(),
+            new ScienceLab()
         ];
         this.selectedModuleForPlacement = null;
         this.scrollY = 0;
@@ -22,7 +23,7 @@ export class ShopManager {
         this.isDraggingScrollbar = false;
     }
 
-    RenderShopWindow(draw, ui) {
+    RenderShopWindow(draw, ui, tutorialStep = 0) {
         const windowRect = { x: 40, y: 100, width: 220, height: 350 };
         draw.Window(windowRect, "STATION SHOP");
 
@@ -41,7 +42,12 @@ export class ShopManager {
         const displayedModulesCount = this.availableModules.filter(m => {
             const isAdvanced = m instanceof Greenhouse || m instanceof BatteryModule ||
                 m instanceof RadioAntenna || m instanceof RecyclingModule;
-            return !isAdvanced || PlayerInventory.isSandboxMode;
+            const isScience = m instanceof ScienceLab;
+
+            if (PlayerInventory.isSandboxMode) return true; // Tout est dispo en sandbox/survival
+            if (isScience) return tutorialStep >= 106; // Labo dispo à l'étape 106
+            if (isAdvanced) return tutorialStep >= 100; // Les autres avancés dispos au début du tuto avancé (100+)
+            return true; // Les bases (Solaire, Dortoir, Oxy, Crypto) toujours dispos
         }).length;
 
         const contentHeight = displayedModulesCount * 50;
@@ -91,11 +97,18 @@ export class ShopManager {
 
         let yOffset = windowRect.y + 50 + this.scrollY;
         for (const module of this.availableModules) {
-            // Cacher les modules avancés pendant le tuto, sauf si mode libre
+            // Logique d'affichage
             const isAdvanced = module instanceof Greenhouse || module instanceof BatteryModule ||
                 module instanceof RadioAntenna || module instanceof RecyclingModule;
+            const isScience = module instanceof ScienceLab;
 
-            if (isAdvanced && !PlayerInventory.isSandboxMode) continue;
+            let isVisible = true;
+            if (!PlayerInventory.isSandboxMode) {
+                if (isScience) isVisible = (tutorialStep >= 106);
+                else if (isAdvanced) isVisible = (tutorialStep >= 100);
+            }
+
+            if (!isVisible) continue;
 
             // On ne déclenche le bouton que si on n'est pas en train de draguer (glisser)
             if (draw.Button({ x: windowRect.x + 10, y: yOffset, width: 200, height: 40 }, `${module.Name} - ${module.CryptoCost}C`)) {
