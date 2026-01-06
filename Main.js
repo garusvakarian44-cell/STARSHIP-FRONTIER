@@ -504,6 +504,11 @@ class MyGame {
     Update(deltaTime) {
         if (!this.isGameStarted || this.isGameOver) return;
 
+        // DEV: Tuto Avancé Shortcut
+        if (Input.GetKeyDown("KeyA")) {
+            window.startAdvancedTutorial();
+        }
+
 
         // --- GESTION DE LA CAMÉRA (ESPACE + CLIC) ---
         // On permet de bouger la caméra même en pause pour observer la station
@@ -941,7 +946,10 @@ class MyGame {
         }
 
         // 5. INTERFACE
-        this.shop.RenderShopWindow(Draw, UI, this.tutorialStep);
+        // 5. INTERFACE
+        if (this.tutorialStep < 100 || this.tutorialStep >= 200) {
+            this.shop.RenderShopWindow(Draw, UI, this.tutorialStep);
+        }
 
         // Mise à jour du HUD HTML
         const cryptoElem = document.getElementById('crypto-val');
@@ -1218,7 +1226,7 @@ class MyGame {
         // Centrer la caméra
         const centerPos = GridManager.GridToWorld(1, 1);
         Antigravity.camera.Position.x = centerPos.x;
-        Antigravity.camera.Position.z = centerPos.z + 10;
+        Antigravity.camera.Position.z = centerPos.z;
     }
 
     NextTutorialStep() {
@@ -1267,7 +1275,7 @@ class MyGame {
         const target = this.myBase.find(m => m instanceof moduleClass);
         if (target) {
             Antigravity.camera.Position.x = target.Position.x;
-            Antigravity.camera.Position.z = target.Position.z + 10; // Décalage pour meilleure vue
+            Antigravity.camera.Position.z = target.Position.z;
             this.focusedModule = target;
         }
     }
