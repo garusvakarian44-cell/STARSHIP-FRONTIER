@@ -82,6 +82,7 @@ class MyGame {
         };
 
         window.nextTutorialStep = () => this.NextTutorialStep();
+        window.closeMerchant = () => this.CloseMerchant();
 
     }
 
@@ -437,6 +438,12 @@ class MyGame {
             row.querySelector('button').onclick = () => this.ExecuteTrade(t);
             container.appendChild(row);
         });
+    }
+
+    CloseMerchant() {
+        const modal = document.getElementById('merchant-modal');
+        if (modal) modal.style.display = 'none';
+        this.isGamePaused = false;
     }
 
     ExecuteTrade(trade) {
