@@ -534,14 +534,14 @@ class MyGame {
 
         // --- AUTO-CENTRAGE CAMÉRA TUTORIEL AVANCÉ ---
         // Pendant le tutoriel avancé, centrer automatiquement sur le module focusé
-        if (this.tutorialStep >= 100 && this.tutorialStep < 200 && this.focusedModule) {
+        if (this.tutorialStep >= 100 && this.tutorialStep <= 200 && this.focusedModule) {
             // Centre la caméra sur le module en glow
-            const targetX = Antigravity.width / 2 + this.focusedModule.Position.x * 40;
-            const targetY = Antigravity.height / 2 + this.focusedModule.Position.z * 40;
+            const targetX = Antigravity.width / 2 - this.focusedModule.Position.x * 40;
+            const targetY = Antigravity.height / 2 - this.focusedModule.Position.z * 40;
 
-            // Interpolation douce pour un mouvement fluide
-            Antigravity.camera.Position.x += (targetX - Antigravity.camera.Position.x) * 0.1;
-            Antigravity.camera.Position.y += (targetY - Antigravity.camera.Position.y) * 0.1;
+            // Interpolation pour un mouvement fluide
+            Antigravity.camera.Position.x += (targetX - Antigravity.camera.Position.x) * 0.08;
+            Antigravity.camera.Position.y += (targetY - Antigravity.camera.Position.y) * 0.08;
         }
 
         // 1. BILAN DES RESSOURCES (Déclarés ici pour être vus par le HUD même en pause)
@@ -859,8 +859,6 @@ class MyGame {
                     break;
 
                 case 118: // Explication Jeu
-                    Antigravity.camera.Position.x = 0;
-                    Antigravity.camera.Position.z = 0;
                     this.ShowTutorialPopup("Objectifs & Héritage", "En Mode Survie, remplissez la mission en haut à droite pour faire apparaître le Cœur de Saut et gagner des bonus permanents ! A chaque début de partie, vous gagnez un nouveau module de départ pour vous aider. Des évènements aléatoires peuvent aussi apparaître pour vous aider ou vous mettre des bâtons dans les roues !", "200");
                     this.tutorialStep = 200; // Wait for last click
                     break;
@@ -1250,6 +1248,12 @@ class MyGame {
 
         // Centrer la grille par rapport à l'écran
         this.CenterGridOnScreen();
+
+        // Focus immédiat sur le premier module
+        this.FocusCameraOn(SolarPanel);
+        // On force la position initiale sans transition au démarrage
+        Antigravity.camera.Position.x = Antigravity.width / 2 - this.focusedModule.Position.x * 40;
+        Antigravity.camera.Position.y = Antigravity.height / 2 - this.focusedModule.Position.z * 40;
     }
 
     NextTutorialStep() {
@@ -1297,8 +1301,6 @@ class MyGame {
     FocusCameraOn(moduleClass) {
         const target = this.myBase.find(m => m instanceof moduleClass);
         if (target) {
-            Antigravity.camera.Position.x = target.Position.x;
-            Antigravity.camera.Position.z = target.Position.z;
             this.focusedModule = target;
         }
     }
