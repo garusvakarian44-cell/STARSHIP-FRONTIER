@@ -73,7 +73,8 @@ class Engine {
         this.camera = {
             IsOrthographic: true,
             Rotation: new Vector3(35.264, 45, 0),
-            Position: new Vector3(this.width / 2, this.height / 2, 0)
+            Position: new Vector3(this.width / 2, this.height / 2, 0),
+            Zoom: 1.0
         };
     }
 
@@ -133,11 +134,12 @@ export const Antigravity = new Engine();
 export const Draw = {
     IsometricCube: function (pos, color, label, strokeColor = 'white') {
         const ctx = Antigravity.ctx;
-        const centerX = Antigravity.camera.Position.x + pos.x * 40;
-        const centerY = Antigravity.camera.Position.y + pos.z * 40;
+        const zoom = Antigravity.camera.Zoom;
+        const centerX = Antigravity.camera.Position.x + pos.x * 40 * zoom;
+        const centerY = Antigravity.camera.Position.y + pos.z * 40 * zoom;
 
-        const w = 40;
-        const h = 20;
+        const w = 40 * zoom;
+        const h = 20 * zoom;
 
         ctx.fillStyle = color;
         ctx.beginPath();
@@ -170,8 +172,9 @@ export const Draw = {
 
     IsometricImage: function (pos, imagePath, label) {
         const ctx = Antigravity.ctx;
-        const centerX = Antigravity.camera.Position.x + pos.x * 40;
-        const centerY = Antigravity.camera.Position.y + pos.z * 40;
+        const zoom = Antigravity.camera.Zoom;
+        const centerX = Antigravity.camera.Position.x + pos.x * 40 * zoom;
+        const centerY = Antigravity.camera.Position.y + pos.z * 40 * zoom;
 
         // On charge l'image si elle n'est pas déjà en cache
         if (!this._imageCache) this._imageCache = {};
@@ -185,9 +188,11 @@ export const Draw = {
         if (img.complete && img.naturalWidth > 0) {
             // L'image fait 80x40 à la base (le losange)
             // L'ancrage doit être le milieu bas du losange de base
-            const drawX = centerX - 40;
-            const drawY = centerY - (img.height - 20);
-            ctx.drawImage(img, drawX, drawY);
+            const drawW = img.width * zoom;
+            const drawH = img.height * zoom;
+            const drawX = centerX - 40 * zoom;
+            const drawY = centerY - (img.height - 20) * zoom;
+            ctx.drawImage(img, drawX, drawY, drawW, drawH);
         } else if (img.complete && img.naturalWidth === 0) {
             // Image cassée : on affiche un cube de secours pour ne pas planter le jeu
             this.IsometricCube(pos, 'rgba(255,0,0,0.5)', "Erreur Image");
@@ -286,18 +291,21 @@ export const UI = {
 
 export const Input = {
     GetMouseToWorldPlane: () => {
-        // Coordonnées relatives au centre de l'écran (caméra)
+        const zoom = Antigravity.camera.Zoom;
         const relX = Antigravity.mousePos.x - Antigravity.camera.Position.x;
         const relY = Antigravity.mousePos.y - Antigravity.camera.Position.y;
 
-        // Inversion de la projection isométrique :
-        // Les constantes 40 et 20 correspondent à (TileWidth/2 * 40) et (TileHeight/2 * 40)
-        const gridX = (relX / 40 + relY / 20) / 2;
-        const gridZ = (relY / 20 - relX / 40) / 2;
+        // Inversion de la projection isométrique avec prise en compte du zoom
+        const gridX = (relX / (40 * zoom) + relY / (20 * zoom)) / 2;
+        const gridZ = (relY / (20 * zoom) - relX / (40 * zoom)) / 2;
 
         return { X: gridX, Z: gridZ };
     },
     GetMouseButtonDown: (btn) => Antigravity.GetMouseButtonDown(btn),
+    GetMouseWheel: () => {
+        const val = Antigravity.mouseWheel;
+        return val;
+    },
     GetKey: (code) => Antigravity.keys[code] === true,
     GetKeyDown: (code) => Antigravity.GetKeyDown(code)
 };

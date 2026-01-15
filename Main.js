@@ -539,6 +539,15 @@ class MyGame {
         this.lastMousePos.x = Antigravity.mousePos.x;
         this.lastMousePos.y = Antigravity.mousePos.y;
 
+        // --- GESTION DU ZOOM (MOLETTE) ---
+        // On ne zoome que si la souris n'est PAS sur le panneau du shop
+        if (!this.shop.isMouseOver && Math.abs(Input.GetMouseWheel()) > 0) {
+            const zoomSpeed = 0.0005;
+            const zoomDelta = -Input.GetMouseWheel() * zoomSpeed;
+            Antigravity.camera.Zoom = Math.max(0.5, Math.min(2.0, Antigravity.camera.Zoom + zoomDelta));
+            Antigravity.mouseWheel = 0; // Consommer l'événement
+        }
+
         // --- AUTO-CENTRAGE CAMÉRA TUTORIEL AVANCÉ ---
         // Pendant le tutoriel avancé, centrer automatiquement sur le module focusé
         if (this.tutorialStep >= 100 && this.tutorialStep <= 200 && this.focusedModule) {
@@ -937,10 +946,12 @@ class MyGame {
         const sortedModules = [...this.myBase].sort((a, b) => (a.GridX + a.GridZ) - (b.GridX + b.GridZ));
 
         for (const module of sortedModules) {
-            module.Update(deltaTime);
-            if (module instanceof CryptoGenerator) {
-                // Le mineur profite aussi du bonus !
-                module.UpdateProduction(deltaTime, this.EnergyRatio, popBonus * PlayerInventory.CryptoEfficiency);
+            if (!this.isGamePaused) {
+                module.Update(deltaTime);
+                if (module instanceof CryptoGenerator) {
+                    // Le mineur profite aussi du bonus !
+                    module.UpdateProduction(deltaTime, this.EnergyRatio, popBonus * PlayerInventory.CryptoEfficiency);
+                }
             }
             module.Render(Draw);
 
