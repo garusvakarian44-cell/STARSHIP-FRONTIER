@@ -38,6 +38,7 @@ class Engine {
         this.mousePos = { x: 0, y: 0 };
         this.mouseClicked = false;
         this.mouseWheel = 0;
+        this.isTrackpadPinch = false;
         this.keys = {};
 
         window.addEventListener('mousemove', (e) => {
@@ -55,7 +56,11 @@ class Engine {
 
         window.addEventListener('wheel', (e) => {
             this.mouseWheel = e.deltaY;
-        }, { passive: true });
+            this.isTrackpadPinch = e.ctrlKey; // Détecte le geste de pincement sur trackpad
+            if (e.ctrlKey) {
+                e.preventDefault(); // Empêche le zoom de la page
+            }
+        }, { passive: false });
 
         this.keys = {};
         this.keysDown = {};

@@ -525,11 +525,11 @@ class MyGame {
         }
 
 
-        // --- GESTION DE LA CAMÉRA (ESPACE + CLIC) ---
+        // --- GESTION DE LA CAMÉRA (ESPACE + CLIC ou CLIC + ESPACE) ---
         // On permet de bouger la caméra même en pause pour observer la station
-        // Note: "Space" is the key code for spacebar
         const isSpacePressed = Input.GetKey("Space");
 
+        // Le drag fonctionne dès que les deux conditions sont vraies simultanément
         if (isSpacePressed && this.mouseIsDown) {
             const dx = Antigravity.mousePos.x - this.lastMousePos.x;
             const dy = Antigravity.mousePos.y - this.lastMousePos.y;
@@ -539,12 +539,20 @@ class MyGame {
         this.lastMousePos.x = Antigravity.mousePos.x;
         this.lastMousePos.y = Antigravity.mousePos.y;
 
-        // --- GESTION DU ZOOM (MOLETTE) ---
+        // --- GESTION DU ZOOM (MOLETTE ou TRACKPAD) ---
         // On ne zoome que si la souris n'est PAS sur le panneau du shop
         if (!this.shop.isMouseOver && Math.abs(Input.GetMouseWheel()) > 0) {
-            const zoomSpeed = 0.0005;
-            const zoomDelta = -Input.GetMouseWheel() * zoomSpeed;
-            Antigravity.camera.Zoom = Math.max(0.5, Math.min(2.0, Antigravity.camera.Zoom + zoomDelta));
+            const wheelDelta = Input.GetMouseWheel();
+            const zoomIn = wheelDelta < 0;  // Molette vers le haut = zoom avant
+
+            if (zoomIn) {
+                Antigravity.camera.Zoom *= 1.12; // Zoom avant : +12%
+            } else {
+                Antigravity.camera.Zoom /= 1.10; // Dézoom : -9.09%
+            }
+
+            // Limites de zoom
+            Antigravity.camera.Zoom = Math.max(0.5, Math.min(2.0, Antigravity.camera.Zoom));
             Antigravity.mouseWheel = 0; // Consommer l'événement
         }
 
@@ -929,7 +937,7 @@ class MyGame {
         }
 
         // 2. RENDU DE LA GRILLE GLOBALE
-        const gridRange = 10; // Étendue de la grille
+        const gridRange = 15; // Étendue de la grille (augmentée de 10 à 15)
         for (let x = -gridRange; x <= gridRange; x++) {
             for (let z = -gridRange; z <= gridRange; z++) {
                 const isOccupied = this.myBase.some(m => m.GridX === x && m.GridZ === z);
