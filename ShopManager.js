@@ -1,4 +1,4 @@
-import { CryptoGenerator, SolarPanel, OxygenReserve, Dortoir, Greenhouse, BatteryModule, RadioAntenna, RecyclingModule, ScienceLab } from './Modules.js';
+import { CryptoGenerator, SolarPanel, OxygenReserve, Dortoir, Greenhouse, BatteryModule, RadioAntenna, RecyclingModule, ScienceLab, DroneHangar } from './Modules.js';
 import { PlayerInventory } from './PlayerInventory.js';
 import { Antigravity } from './engine.js';
 
@@ -13,7 +13,8 @@ export class ShopManager {
             new BatteryModule(),
             new RecyclingModule(),
             new RadioAntenna(),
-            new ScienceLab()
+            new ScienceLab(),
+            new DroneHangar()
         ];
         this.selectedModuleForPlacement = null;
         this.scrollY = 0;
@@ -56,28 +57,49 @@ export class ShopManager {
 
         // Interaction avec la barre de défilement latérale (Décalée vers la droite)
         const scrollBarTrack = { x: windowRect.x + windowRect.width - 8, y: windowRect.y + 50, width: 6, height: viewHeight - 10 };
-        const isHoverScrollBar = Antigravity.mousePos.x > scrollBarTrack.x - 5 && Antigravity.mousePos.x < scrollBarTrack.x + scrollBarTrack.width + 5 &&
-            Antigravity.mousePos.y > scrollBarTrack.y && Antigravity.mousePos.y < scrollBarTrack.y + scrollBarTrack.height;
+        let scrollBarHeight = 0;
+        let scrollPercent = 0;
+        let scrollBarY = 0;
 
-        if (Antigravity.mouseClicked && (isHoverScrollBar || this.isDraggingScrollbar)) {
-            this.isDraggingScrollbar = true;
-            // Calculer le pourcentage de scroll basé sur la position Y de la souris
-            const relativeY = (Antigravity.mousePos.y - scrollBarTrack.y) / scrollBarTrack.height;
-            this.scrollY = -relativeY * maxScroll;
-        } else if (!Antigravity.mouseClicked) {
+        if (contentHeight > viewHeight) {
+            scrollBarHeight = Math.max(30, (viewHeight / contentHeight) * scrollBarTrack.height);
+            scrollPercent = maxScroll > 0 ? (-this.scrollY / maxScroll) : 0;
+            scrollBarY = scrollBarTrack.y + (scrollPercent * (scrollBarTrack.height - scrollBarHeight));
+        }
+
+        const isHoverHandle = Antigravity.mousePos.x > scrollBarTrack.x - 5 && Antigravity.mousePos.x < scrollBarTrack.x + scrollBarTrack.width + 5 &&
+            Antigravity.mousePos.y > scrollBarY && Antigravity.mousePos.y < scrollBarY + scrollBarHeight;
+
+        if (Antigravity.mouseClicked) {
+            if (!this.isDraggingScrollbar && isHoverHandle) {
+                this.isDraggingScrollbar = true;
+                // Calculer où l'on a cliqué dans le handle (offset)
+                this.dragOffsetY = Antigravity.mousePos.y - scrollBarY;
+            } else if (this.isDraggingScrollbar) {
+                // Positionner le haut du handle par rapport à la souris sans lâcher l'offset
+                const desiredHandleY = Antigravity.mousePos.y - this.dragOffsetY;
+                const usableTrackHeight = scrollBarTrack.height - scrollBarHeight;
+
+                if (maxScroll > 0 && usableTrackHeight > 0) {
+                    const scrollPercent = (desiredHandleY - scrollBarTrack.y) / usableTrackHeight;
+                    // On reste entre 0 (haut) et 1 (bas)
+                    const clampedPercent = Math.max(0, Math.min(1, scrollPercent));
+                    this.scrollY = -clampedPercent * maxScroll;
+                }
+            }
+        } else {
             this.isDraggingScrollbar = false;
         }
 
-        // Si on ne drag pas la scrollbar, on peut drag le contenu
+        // Gestion du drag du contenu (si on ne drag pas la scrollbar)
         if (!this.isDraggingScrollbar) {
-            const isDraggingThisFrame = Antigravity.mouseClicked && isHoverWindow;
-            if (isDraggingThisFrame) {
-                if (!this.isDragging) {
+            if (Antigravity.mouseClicked) {
+                if (!this.isDragging && isHoverWindow && !isHoverHandle) {
                     this.isDragging = true;
                     this.lastMouseY = Antigravity.mousePos.y;
-                } else {
+                } else if (this.isDragging) {
                     const deltaY = Antigravity.mousePos.y - this.lastMouseY;
-                    this.scrollY += deltaY * 1.3; // Sensibilité +30%
+                    this.scrollY += deltaY * 1.3;
                     this.lastMouseY = Antigravity.mousePos.y;
                 }
             } else {
@@ -125,9 +147,9 @@ export class ShopManager {
             ctx.fillStyle = 'rgba(255,255,255,0.05)';
             ctx.fillRect(scrollBarTrack.x + 1, scrollBarTrack.y, 4, scrollBarTrack.height);
 
-            const scrollBarHeight = Math.max(30, (viewHeight / contentHeight) * scrollBarTrack.height);
-            const scrollPercent = maxScroll > 0 ? (-this.scrollY / maxScroll) : 0;
-            const scrollBarY = scrollBarTrack.y + (scrollPercent * (scrollBarTrack.height - scrollBarHeight));
+            // Recalculer après interaction pour un rendu fluide
+            scrollPercent = maxScroll > 0 ? (-this.scrollY / maxScroll) : 0;
+            scrollBarY = scrollBarTrack.y + (scrollPercent * (scrollBarTrack.height - scrollBarHeight));
 
             ctx.fillStyle = this.isDraggingScrollbar ? '#fff' : '#00f2ff';
             ctx.fillRect(scrollBarTrack.x, scrollBarY, 6, scrollBarHeight);

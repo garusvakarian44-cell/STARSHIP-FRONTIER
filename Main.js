@@ -2,7 +2,7 @@ import { Antigravity, Draw, UI, Input, Vector3, Rect, Color } from './engine.js'
 import { GridManager } from './GridManager.js';
 import { PlayerInventory } from './PlayerInventory.js';
 import { ShopManager } from './ShopManager.js';
-import { CryptoGenerator, SolarPanel, OxygenReserve, Dortoir, Greenhouse, BatteryModule, RadioAntenna, RecyclingModule, ScienceLab, JumpDrive } from './Modules.js';
+import { CryptoGenerator, SolarPanel, OxygenReserve, Dortoir, Greenhouse, BatteryModule, RadioAntenna, RecyclingModule, ScienceLab, JumpDrive, DroneHangar, Asteroid, Drone } from './Modules.js';
 
 class MyGame {
     constructor() {
@@ -25,9 +25,14 @@ class MyGame {
         this.isJumpDriveSpawned = false;
         this.currentScale = 1.0;
 
-        // Persistance Roguelite
+        // Persistance & Session
         this.completedRuns = parseInt(localStorage.getItem('apex_horizons_completed_runs') || '0');
-        this.unlockedStarters = JSON.parse(localStorage.getItem('apex_horizons_starters') || '[]');
+        this.playTime = 0;
+
+        // Système d'astéroïdes et drones
+        this.asteroids = [];
+        this.asteroidSpawnTimer = 0;
+        this.asteroidSpawnInterval = 60 + Math.random() * 30; // 60-90 secondes
 
         // Système de Boons
         this.boonTimer = 300; // Tous les 5 min (300 sec)
@@ -51,25 +56,18 @@ class MyGame {
         this.signalTimer = 45 + Math.random() * 60; // Premier signal entre 45s et 1m45s
 
         // Définition globale pour le menu HTML
-        // Définition globale pour le menu HTML
         window.startGame = (isSandbox) => {
             const isAfterGame = sessionStorage.getItem('apex_horizons_after_game') === 'true';
 
-            // Si on lance depuis le menu sans avoir fait de partie juste avant (ex: restart browser)
+            // Reset session stats if starting fresh
             if (!isAfterGame) {
-                this.completedRuns = 0;
-                this.unlockedStarters = [];
-                localStorage.setItem('apex_horizons_completed_runs', '0');
-                localStorage.setItem('apex_horizons_starters', '[]');
-                localStorage.removeItem('apex_horizons_visited_sandbox');
+                this.playTime = 0;
             }
 
-            if (isSandbox && this.completedRuns > 0) {
-                this.ShowGiftSelection();
-            } else {
-                this.StartRun(isSandbox);
-            }
+            this.StartRun(isSandbox);
         };
+
+        window.toggleStats = () => this.ToggleStats();
 
         window.toggleResearch = () => this.ToggleResearchTree();
 
@@ -83,7 +81,30 @@ class MyGame {
 
         window.nextTutorialStep = () => this.NextTutorialStep();
         window.closeMerchant = () => this.CloseMerchant();
+        window.openDroneHangar = (hangar) => this.OpenDroneHangar(hangar);
+        window.closeDroneHangar = () => this.CloseDroneHangar();
+        window.buyDrone = (hangar) => this.BuyDrone(hangar);
+        window.deployDrone = (hangar) => this.DeployDrone(hangar);
 
+        // Système de Sauvegarde & Pause
+        window.loadGame = () => this.LoadGame();
+        window.resetAndStartOver = () => this.ResetAndStartOver();
+        window.togglePauseMenu = () => this.TogglePauseMenu();
+
+        // Check for existing save on boot
+        setTimeout(() => {
+            const savedData = localStorage.getItem('apex_horizons_save_v1');
+            const contBtn = document.getElementById('continue-btn');
+            if (savedData && contBtn) contBtn.style.display = 'block';
+        }, 100);
+
+        // Effets de Saut
+        this.isJumping = false;
+        this.jumpTimer = 0;
+        this.jumpMeteorites = [];
+
+        // Secret Discovery Persistence
+        this.discoveredSecrets = JSON.parse(localStorage.getItem('apex_horizons_discovered_secrets') || '[]');
     }
 
     GenerateGoals() {
@@ -160,40 +181,70 @@ class MyGame {
         });
     }
 
-    ShowGiftSelection() {
-        const modal = document.getElementById('gift-modal');
-        const container = document.getElementById('gift-choices');
-        if (!modal || !container) return;
+    ToggleStats() {
+        const modal = document.getElementById('stats-modal');
+        if (!modal) return;
 
-        this.isGamePaused = true;
-        modal.style.display = 'flex';
-        container.innerHTML = "";
+        if (modal.style.display === 'flex') {
+            modal.style.display = 'none';
+            this.isGamePaused = false;
+        } else {
+            this.isGamePaused = true;
+            modal.style.display = 'flex';
+            this.UpdateStatsUI();
+        }
+    }
 
-        const options = [
-            { name: "Panneau Solaire", type: "solar", icon: "⚡" },
-            { name: "Soutien Oxygène", type: "oxygen", icon: "🌬️" },
-            { name: "Dortoir d'Appoint", type: "pop", icon: "🏠" }
+    UpdateStatsUI() {
+        const timeElem = document.getElementById('stats-time');
+        const sectorElem = document.getElementById('stats-sector');
+        const bonusesElem = document.getElementById('bonuses-list');
+        if (!timeElem || !sectorElem || !bonusesElem) return;
+
+        // Formater le temps (HH:MM:SS)
+        const hours = Math.floor(this.playTime / 3600);
+        const minutes = Math.floor((this.playTime % 3600) / 60);
+        const seconds = Math.floor(this.playTime % 60);
+        timeElem.innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        sectorElem.innerText = `Secteur actuel : ${this.completedRuns + 1}`;
+
+        // Check for newly discovered secrets in the base
+        const secrets = ['DroneHangar', 'JumpDrive'];
+        this.myBase.forEach(m => {
+            const type = m.constructor.name;
+            if (secrets.includes(type) && !this.discoveredSecrets.includes(type)) {
+                this.discoveredSecrets.push(type);
+                localStorage.setItem('apex_horizons_discovered_secrets', JSON.stringify(this.discoveredSecrets));
+            }
+        });
+
+        const totalModules = this.myBase.length;
+        const discoveredCount = this.discoveredSecrets.length;
+
+        // Liste des noms lisibles pour les secrets
+        const secretNames = {
+            'DroneHangar': 'Hangar de Drones',
+            'JumpDrive': 'Cœur de Saut'
+        };
+        const discoveredList = this.discoveredSecrets.map(id => secretNames[id] || id).join(', ');
+
+        // Liste simplifiée
+        const stats = [
+            { name: "Points de Science", val: `${Math.floor(PlayerInventory.SciencePoints || 0)}` },
+            { name: "Modules Deployés", val: `${totalModules}` },
+            { name: "Secrets Découverts", val: `${discoveredCount} / ${secrets.length}`, extra: discoveredList }
         ];
 
-        options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.style.flex = "1";
-            btn.style.padding = "20px";
-            btn.style.background = "rgba(255,255,255,0.05)";
-            btn.style.border = "1px solid var(--accent-color)";
-            btn.style.color = "white";
-            btn.style.cursor = "pointer";
-            btn.innerHTML = `<div style='font-size:2rem'>${opt.icon}</div><br><strong>${opt.name}</strong>`;
-
-            btn.onclick = () => {
-                this.unlockedStarters.push(opt.type);
-                localStorage.setItem('apex_horizons_starters', JSON.stringify(this.unlockedStarters));
-                modal.style.display = 'none';
-                this.isGamePaused = false;
-                this.StartRun(true);
-            };
-            container.appendChild(btn);
-        });
+        bonusesElem.innerHTML = stats.map(s => `
+            <div style="background: rgba(255,255,255,0.03); padding: 12px; border: 1px solid rgba(0, 242, 255, 0.1); display: flex; flex-direction: column; gap: 5px; grid-column: span 2;">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <span style="opacity: 0.7; font-size: 0.9rem;">${s.name}</span>
+                    <strong style="color: #00f2ff; font-size: 1.1rem;">${s.val}</strong>
+                </div>
+                ${s.extra ? `<div style="font-size: 0.75rem; color: #ffcc00; opacity: 0.8; margin-top: 5px;">Découvert : ${s.extra}</div>` : ''}
+            </div>
+        `).join('');
     }
 
     StartRun(isSandbox) {
@@ -279,38 +330,6 @@ class MyGame {
 
         this.myBase.push(starterSolar);
         this.myBase.push(starterDortoir);
-
-        // Placement des bonus d'héritage (Roguelite) - Placement proche du centre
-        if (PlayerInventory.isSandboxMode) {
-            // Liste ordonnée de positions candidates proches du hub (0,0) et (1,0)
-            const candidates = [
-                { x: 0, z: 1 }, { x: 1, z: 1 }, { x: 0, z: -1 }, { x: 1, z: -1 },
-                { x: -1, z: 0 }, { x: 2, z: 0 }, { x: -1, z: 1 }, { x: 2, z: 1 },
-                { x: -1, z: -1 }, { x: 2, z: -1 }, { x: 0, z: 2 }, { x: 1, z: 2 }
-            ];
-
-            let candIdx = 0;
-            this.unlockedStarters.forEach((type) => {
-                let mod;
-                if (type === 'solar') mod = new SolarPanel();
-                if (type === 'oxygen') mod = new OxygenReserve();
-                if (type === 'pop') mod = new Dortoir();
-
-                if (mod) {
-                    // Trouver la prochaine position libre dans les candidats
-                    while (candIdx < candidates.length) {
-                        const pos = candidates[candIdx++];
-                        const isOccupied = this.myBase.some(m => m.GridX === pos.x && m.GridZ === pos.z);
-                        if (!isOccupied) {
-                            mod.GridX = pos.x; mod.GridZ = pos.z;
-                            mod.Position = GridManager.GridToWorld(pos.x, pos.z);
-                            this.myBase.push(mod);
-                            break;
-                        }
-                    }
-                }
-            });
-        }
     }
 
     ShowBoonSelection() {
@@ -466,6 +485,87 @@ class MyGame {
         }
     }
 
+    OpenDroneHangar(hangar) {
+        this.isGamePaused = true;
+        this.currentHangar = hangar;
+        const modal = document.getElementById('drone-hangar-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            this.UpdateDroneHangarUI(hangar);
+        }
+    }
+
+    CloseDroneHangar() {
+        const modal = document.getElementById('drone-hangar-modal');
+        if (modal) modal.style.display = 'none';
+        this.isGamePaused = false;
+        this.currentHangar = null;
+    }
+
+    UpdateDroneHangarUI(hangar) {
+        const droneCountElem = document.getElementById('hangar-drone-count');
+        const deployedCountElem = document.getElementById('hangar-deployed-count');
+
+        if (droneCountElem) droneCountElem.innerText = hangar.droneCount;
+        if (deployedCountElem) deployedCountElem.innerText = hangar.drones.length;
+    }
+
+    BuyDrone(hangar) {
+        const cost = 1000;
+        if (PlayerInventory.CryptoAmount >= cost) {
+            PlayerInventory.CryptoAmount -= cost;
+            hangar.droneCount++;
+            this.UpdateDroneHangarUI(hangar);
+        } else {
+            alert("Pas assez de Crypto !");
+        }
+    }
+
+    DeployDrone(hangar) {
+        const energyCost = 50;
+        const cryptoCost = 20;
+
+        if (hangar.droneCount <= 0) {
+            alert("Aucun drone disponible !");
+            return;
+        }
+
+        if (PlayerInventory.EnergyLevel < energyCost) {
+            alert("Pas assez d'énergie !");
+            return;
+        }
+
+        if (PlayerInventory.CryptoAmount < cryptoCost) {
+            alert("Pas assez de Crypto !");
+            return;
+        }
+
+        PlayerInventory.EnergyLevel -= energyCost;
+        PlayerInventory.CryptoAmount -= cryptoCost;
+        hangar.droneCount--;
+
+        const drone = new Drone(hangar.GridX, hangar.GridZ);
+        hangar.drones.push(drone);
+
+        this.UpdateDroneHangarUI(hangar);
+        this.CloseDroneHangar();
+    }
+
+    SpawnAsteroid() {
+        const edge = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+        let x, z;
+        const range = 15;
+
+        switch (edge) {
+            case 0: x = Math.floor(Math.random() * 30) - range; z = -range; break;
+            case 1: x = range; z = Math.floor(Math.random() * 30) - range; break;
+            case 2: x = Math.floor(Math.random() * 30) - range; z = range; break;
+            case 3: x = -range; z = Math.floor(Math.random() * 30) - range; break;
+        }
+
+        this.asteroids.push(new Asteroid(x, z));
+    }
+
     getValidPlacementCoords(moduleToPlace) {
         const occupied = new Set();
         this.myBase.forEach(m => occupied.add(`${m.GridX},${m.GridZ}`));
@@ -517,12 +617,30 @@ class MyGame {
     }
 
     Update(deltaTime) {
+        // Toggle Pause with Escape
+        if (Input.GetKeyDown("Escape")) {
+            this.TogglePauseMenu();
+        }
+
         if (!this.isGameStarted || this.isGameOver) return;
 
-        // DEV: Tuto Avancé Shortcut
-        if (Input.GetKeyDown("KeyQ")) {
-            window.startAdvancedTutorial();
+        // --- GESTION DE LA TRANSITION DE SAUT ---
+        if (this.isJumping) {
+            this.jumpTimer -= deltaTime;
+
+            // Animation des météorites de saut
+            this.jumpMeteorites.forEach(m => {
+                m.x -= m.speed * deltaTime;
+                if (m.x < -100) m.x = Antigravity.width + 100;
+            });
+
+            if (this.jumpTimer <= 0) {
+                this.isJumping = false;
+                this.FinalizeJump();
+            }
         }
+
+
 
 
         // --- GESTION DE LA CAMÉRA (ESPACE + CLIC ou CLIC + ESPACE) ---
@@ -591,6 +709,64 @@ class MyGame {
         const moduleLimit = 4 + (totalPopulation * 3);
 
         if (!this.isGamePaused) {
+            // === SYSTÈME D'ASTÉROÏDES (après run 3+) ===
+            if (this.completedRuns >= 2) {
+                this.asteroidSpawnTimer -= deltaTime;
+                if (this.asteroidSpawnTimer <= 0) {
+                    this.SpawnAsteroid();
+                    this.asteroidSpawnTimer = 60 + Math.random() * 30;
+                }
+            }
+
+            // Mise à jour des astéroïdes
+            for (let i = this.asteroids.length - 1; i >= 0; i--) {
+                this.asteroids[i].Update(deltaTime, this.myBase);
+
+                // Vérifier collision avec station
+                const collision = this.myBase.find(m =>
+                    m.GridX === this.asteroids[i].GridX &&
+                    m.GridZ === this.asteroids[i].GridZ &&
+                    !(m instanceof JumpDrive) // Les astéroïdes ne détruisent pas le cœur de saut
+                );
+
+                if (collision) {
+                    // Détruire le module et l'astéroïde
+                    this.myBase = this.myBase.filter(m => m !== collision);
+                    this.asteroids.splice(i, 1);
+
+                    // Notification visuelle
+                    const hintPopup = document.getElementById('start-hint');
+                    if (hintPopup) {
+                        hintPopup.style.display = 'block';
+                        document.getElementById('hint-icon').innerText = '💥';
+                        document.getElementById('hint-title').innerText = 'IMPACT ASTÉROÏDE';
+                        document.getElementById('hint-title').style.color = '#ff4444';
+                        document.getElementById('hint-desc').innerText = `Un astéroïde a détruit ${collision.Name} !`;
+                        setTimeout(() => hintPopup.style.display = 'none', 4000);
+                    }
+                }
+            }
+
+            // === SYSTÈME DE DRONES ===
+            this.myBase.forEach(m => {
+                if (m instanceof DroneHangar) {
+                    for (let i = m.drones.length - 1; i >= 0; i--) {
+                        const result = m.drones[i].Update(deltaTime, this.asteroids);
+
+                        if (result === 'destroy-asteroid') {
+                            // Détruire l'astéroïde ciblé
+                            const asteroid = m.drones[i].targetAsteroid;
+                            this.asteroids = this.asteroids.filter(a => a !== asteroid);
+                        } else if (result === 'returned') {
+                            // Drone revenu, donner la science
+                            PlayerInventory.SciencePoints += m.drones[i].scienceCollected;
+                            m.droneCount++; // Remettre le drone dans le hangar
+                            m.drones.splice(i, 1);
+                        }
+                    }
+                }
+            });
+
             // Mise à jour des états temporaires
             if (PlayerInventory.isVirusActive) {
                 PlayerInventory.virusTimer -= deltaTime;
@@ -622,6 +798,7 @@ class MyGame {
                 }
             }
 
+            this.playTime += deltaTime;
             const foodMultiplier = (PlayerInventory.FoodLevel > 0) ? 1.0 : 0.8;
             const globalMultiplier = popBonus * foodMultiplier;
 
@@ -655,7 +832,7 @@ class MyGame {
             }
 
             // Ratio pour la prod de crypto (Virus impact)
-            let viralMalus = PlayerInventory.isVirusActive ? 0.3 : 1.0;
+            let viralMalus = PlayerInventory.isVirusActive ? 0.0 : 1.0;
             this.EnergyRatio = ((PlayerInventory.EnergyLevel > 0 || totalEnergyProd >= totalEnergyDemand) ? 1 : 0) * viralMalus;
             // --- MISE À JOUR DES STOCKS ---
             PlayerInventory.EnergyLevel += (totalEnergyProd - totalEnergyDemand) * deltaTime;
@@ -868,7 +1045,7 @@ class MyGame {
 
                 case 114:
                     this.FocusCameraOn(RadioAntenna);
-                    this.ShowTutorialPopup("Antenne", "Permet de contacter les Marchands pour échanger des ressources. Génère un revenu passif toutes les 30 secondes.", "115");
+                    this.ShowTutorialPopup("Antenne", "Permet de contacter les Marchands pour échanger des ressources. Génère un revenu passif toutes les minutes.", "115");
                     this.tutorialStep = 115;
                     break;
                 case 115:
@@ -969,6 +1146,20 @@ class MyGame {
                 Draw.IsometricCube(module.Position, 'rgba(0, 242, 255, 0.4)');
             }
         }
+
+        // === RENDU DES ASTÉROÏDES ===
+        this.asteroids.forEach(asteroid => {
+            asteroid.Render(Draw);
+        });
+
+        // === RENDU DES DRONES ===
+        this.myBase.forEach(hangar => {
+            if (hangar instanceof DroneHangar) {
+                hangar.drones.forEach(drone => {
+                    drone.Render(Draw);
+                });
+            }
+        });
 
         // 4. VÉRIFICATION OBJECTIF
         if (PlayerInventory.isSandboxMode && this.currentGoal) {
@@ -1189,7 +1380,56 @@ class MyGame {
                     this.ShowMerchant();
                 } else if (mod instanceof ScienceLab) {
                     this.ToggleResearchTree();
+                } else if (mod instanceof DroneHangar) {
+                    this.OpenDroneHangar(mod);
                 }
+            }
+        }
+
+        // --- 6. EFFETS DE TRANSITION DE SAUT ---
+        if (this.isJumping) {
+            const ctx = Antigravity.ctx;
+            const progress = Math.max(0, (2.5 - this.jumpTimer) / 2.5);
+
+            // Rendu des météorites filantes (en arrière-plan du HUD)
+            this.jumpMeteorites.forEach(m => {
+                const img = Draw._imageCache && Draw._imageCache['meteorite.png'];
+                if (img && img.complete) {
+                    ctx.save();
+                    ctx.translate(m.x, m.y);
+                    ctx.rotate(m.rot + (Date.now() * 0.005));
+
+                    // Trainée de lumière derrière la météorite (effet de vitesse)
+                    const trailLen = m.speed * 0.2;
+                    const gradient = ctx.createLinearGradient(0, 0, -trailLen, 0); // Trainée vers l'arrière
+                    gradient.addColorStop(0, 'rgba(0, 242, 255, 0.6)');
+                    gradient.addColorStop(1, 'rgba(0, 242, 255, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(-trailLen, -m.size / 4, trailLen, m.size / 2);
+
+                    // L'image de la météorite
+                    ctx.drawImage(img, -m.size / 2, -m.size / 2, m.size, m.size);
+                    ctx.restore();
+                } else {
+                    // Force le chargement de l'image si pas encore prête
+                    Draw.IsometricImage({ x: 9999, z: 9999 }, 'meteorite.png');
+                }
+            });
+
+            // Distorsion visuelle (vibration et décalage de l'image actuelle)
+            if (progress > 0.1) {
+                ctx.save();
+                ctx.globalAlpha = 0.25 * progress;
+                const offset = Math.sin(Date.now() * 0.08) * 15 * progress;
+                ctx.drawImage(Antigravity.canvas, offset, -offset);
+                ctx.restore();
+            }
+
+            // Flash blanc final juste avant la fin du timer
+            if (this.jumpTimer < 0.6) {
+                const flashAlpha = Math.min(1, 1.0 - (this.jumpTimer / 0.6));
+                ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
+                ctx.fillRect(0, 0, Antigravity.width, Antigravity.height);
             }
         }
     }
@@ -1210,6 +1450,24 @@ class MyGame {
     }
 
     ExecuteJump() {
+        if (this.isJumping) return;
+        this.isJumping = true;
+        this.jumpTimer = 2.5; // Durée du saut
+
+        // Initialiser les météorites de transition
+        this.jumpMeteorites = [];
+        for (let i = 0; i < 20; i++) {
+            this.jumpMeteorites.push({
+                x: Math.random() * Antigravity.width,
+                y: Math.random() * Antigravity.height,
+                speed: 1500 + Math.random() * 2000,
+                size: 20 + Math.random() * 40,
+                rot: Math.random() * Math.PI * 2
+            });
+        }
+    }
+
+    FinalizeJump() {
         // Effet de saut (flash ?) - On scale la difficulté
         this.completedRuns++;
         localStorage.setItem('apex_horizons_completed_runs', this.completedRuns);
@@ -1238,6 +1496,117 @@ class MyGame {
             document.getElementById('hint-title').style.color = "#00f2ff";
             document.getElementById('hint-desc').innerText = "Nouveau secteur atteint. Vigilance, les défis augmentent !";
             setTimeout(() => hintPopup.style.display = 'none', 5000);
+        }
+
+        this.SaveGame();
+    }
+
+    SaveGame() {
+        const data = {
+            completedRuns: this.completedRuns,
+            playTime: this.playTime,
+            inventory: {
+                CryptoAmount: PlayerInventory.CryptoAmount,
+                EnergyLevel: PlayerInventory.EnergyLevel,
+                EnergyMax: PlayerInventory.EnergyMax,
+                OxygenLevel: PlayerInventory.OxygenLevel,
+                OxygenMax: PlayerInventory.OxygenMax,
+                FoodLevel: PlayerInventory.FoodLevel,
+                SciencePoints: PlayerInventory.SciencePoints,
+                ScienceMultiplier: PlayerInventory.ScienceMultiplier,
+                CryptoEfficiency: PlayerInventory.CryptoEfficiency,
+                SolarEfficiency: PlayerInventory.SolarEfficiency,
+                OxygenEfficiency: PlayerInventory.OxygenEfficiency,
+                FoodEfficiency: PlayerInventory.FoodEfficiency,
+                ModuleCostMultiplier: PlayerInventory.ModuleCostMultiplier,
+                PopulationConsumption: PlayerInventory.PopulationConsumption,
+                ScienceEfficiency: PlayerInventory.ScienceEfficiency,
+                ResearchedTechs: PlayerInventory.ResearchedTechs,
+                isSandboxMode: PlayerInventory.isSandboxMode
+            },
+            base: this.myBase.map(m => ({
+                type: m.constructor.name,
+                x: m.GridX,
+                z: m.GridZ
+            })),
+            currentGoalId: this.currentGoal ? this.currentGoal.id : null
+        };
+        localStorage.setItem('apex_horizons_save_v1', JSON.stringify(data));
+        console.log("Partie sauvegardée !");
+    }
+
+    LoadGame() {
+        const json = localStorage.getItem('apex_horizons_save_v1');
+        if (!json) {
+            alert("Aucune sauvegarde trouvée !");
+            return;
+        }
+        const data = JSON.parse(json);
+
+        // Revenir au jeu
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('game-over').style.display = 'none';
+        document.getElementById('pause-modal').style.display = 'none';
+
+        // Restaurer l'inventaire
+        Object.assign(PlayerInventory, data.inventory);
+
+        // Restaurer les variables de jeu
+        this.completedRuns = data.completedRuns;
+        this.playTime = data.playTime;
+        this.isGameStarted = true;
+        this.isGamePaused = false;
+
+        // Restaurer la base
+        const classMap = {
+            CryptoGenerator, SolarPanel, OxygenReserve, Dortoir, Greenhouse,
+            BatteryModule, RadioAntenna, RecyclingModule, ScienceLab, DroneHangar
+        };
+
+        this.myBase = data.base.map(entry => {
+            const Cls = classMap[entry.type];
+            if (!Cls) return null;
+            const mod = new Cls();
+            mod.GridX = entry.x;
+            mod.GridZ = entry.z;
+            mod.Position = GridManager.GridToWorld(entry.x, entry.z);
+            return mod;
+        }).filter(m => m !== null);
+
+        // Objectif
+        this.GenerateGoals();
+        if (data.currentGoalId) {
+            this.currentGoal = this.goalsList.find(g => g.id === data.currentGoalId);
+        }
+
+        this.isJumpDriveSpawned = false;
+        this.Start(); // Pour recentrer caméra etc
+
+        const goalHUD = document.getElementById('goal-hud');
+        if (goalHUD && this.currentGoal) {
+            goalHUD.style.display = 'block';
+            document.getElementById('goal-text').innerText = this.currentGoal.desc;
+        }
+    }
+
+    ResetAndStartOver() {
+        if (confirm("Êtes-vous sûr de vouloir tout supprimer et recommencer à zéro ?")) {
+            localStorage.removeItem('apex_horizons_save_v1');
+            localStorage.setItem('apex_horizons_completed_runs', '0');
+            location.reload();
+        }
+    }
+
+    TogglePauseMenu() {
+        if (!this.isGameStarted || this.isGameOver || this.isJumping) return;
+
+        const modal = document.getElementById('pause-modal');
+        if (modal.style.display === 'flex') {
+            modal.style.display = 'none';
+            this.isGamePaused = false;
+        } else {
+            modal.style.display = 'flex';
+            this.isGamePaused = true;
         }
     }
 
@@ -1340,6 +1709,7 @@ class MyGame {
 
 // Initialisation et boucle de jeu
 const game = new MyGame();
+window.game = game; // Exposer pour les modals HTML
 // game.Start(); // NE PAS APPELER ICI, window.startGame s'en charge
 
 let lastTime = 0;

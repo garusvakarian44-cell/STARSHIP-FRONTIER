@@ -2,6 +2,9 @@ import { BaseModule } from './BaseModule.js';
 import { PlayerInventory } from './PlayerInventory.js';
 import { Antigravity } from './engine.js';
 
+// Import et ré-export des classes du système de drones
+export { DroneHangar, Asteroid, Drone } from './DroneSystem.js';
+
 export class CryptoGenerator extends BaseModule {
     constructor() {
         super();
@@ -17,6 +20,9 @@ export class CryptoGenerator extends BaseModule {
     }
 
     Render(draw) {
+        if (PlayerInventory.isVirusActive) {
+            draw.IsometricCube(this.Position, 'rgba(255, 0, 0, 0.5)');
+        }
         draw.IsometricImage(this.Position, 'cryptoModule.png', "Mineur de Crypto");
     }
 }
@@ -93,6 +99,18 @@ export class RadioAntenna extends BaseModule {
         super();
         this.Name = "Antenne Comm";
         this.CryptoCost = 150;
+        this.timer = 0;
+        this.incomeInterval = 60; // 1 minute
+        this.incomeAmount = 50;
+    }
+
+    Update(deltaTime) {
+        this.timer += deltaTime;
+        if (this.timer >= this.incomeInterval) {
+            PlayerInventory.CryptoAmount += this.incomeAmount;
+            // Optionnel : Feedback visuel ou sonore ici
+            this.timer = 0;
+        }
     }
     Render(draw) {
         draw.IsometricImage(this.Position, 'antenne.png', "Antenne Comm");
@@ -120,7 +138,7 @@ export class ScienceLab extends BaseModule {
         this.EnergyConsumption = 5.0;
     }
     Render(draw) {
-        draw.IsometricCube(this.Position, '#f1c40f', this.Name);
+        draw.IsometricImage(this.Position, 'labo(1).png', this.Name);
     }
 }
 

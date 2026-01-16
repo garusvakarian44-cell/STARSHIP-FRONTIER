@@ -27,9 +27,12 @@
             <div class="modal-content">
                 <h1 class="accent">STARSHIP FRONTIER</h1>
                 <div style="display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 20px;">
-                    <button onclick="window.startGame(false)" style="width: 250px;">COMMENCER LE TUTORIEL</button>
+                    <button id="continue-btn" onclick="window.loadGame()"
+                        style="width: 250px; display: none; background: #ffcc00; color: black; border-color: #ffcc00;">CONTINUER
+                        LA PARTIE</button>
+                    <button onclick="window.startGame(false)" style="width: 250px;">TUTORIEL</button>
                     <button onclick="window.startGame(true)"
-                        style="width: 250px; background: #00f2ff; color: black;">MODE SURVIE</button>
+                        style="width: 250px; background: #00f2ff; color: black;">NOUVELLE PARTIE</button>
                 </div>
             </div>
         </div>
@@ -87,6 +90,14 @@
                 <span class="label">MODULES</span>
                 <span class="value" id="module-val">0/0</span>
             </div>
+            <div class="hud-item" id="stats-btn-container" style="cursor: pointer; padding: 0;"
+                onclick="window.toggleStats()">
+                <div
+                    style="height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(0, 242, 255, 0.05);">
+                    <span style="font-size: 1.2rem;">📊</span>
+                    <span class="label" style="margin: 0; color: #fff; font-weight: bold;">STATS</span>
+                </div>
+            </div>
         </div>
 
         <!-- Game Over Modal -->
@@ -94,7 +105,12 @@
             <div class="modal-content">
                 <h1 class="accent">MISSION ÉCHOUÉE</h1>
                 <p id="death-reason">Raison de la défaite</p>
-                <button onclick="location.reload()">RECOMMENCER</button>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button onclick="window.loadGame()" style="background: #ffcc00; color: black;">CHARGER DERNIER
+                        SAUT</button>
+                    <button onclick="window.resetAndStartOver()" style="background: #ff4444; color: white;">RECOMMENCER
+                        À ZÉRO</button>
+                </div>
             </div>
         </div>
 
@@ -146,15 +162,26 @@
                 </div>
             </div>
         </div>
-        <!-- Starting Gift Modal -->
-        <div id="gift-modal" class="modal" style="display: none;">
-            <div class="modal-content" style="max-width: 500px;">
-                <h1 class="accent">HÉRITAGE DE MISSION</h1>
-                <p>Choisissez un module de base à ajouter <strong>définitivement</strong> à vos futurs départs de
-                    mission.</p>
-                <div id="gift-choices" style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
-                    <!-- Rempli par JS -->
+        <!-- Stats Modal -->
+        <div id="stats-modal" class="modal" style="display: none; background: rgba(0,0,0,0.92);">
+            <div class="modal-content" style="max-width: 500px; border-color: #00f2ff;">
+                <h1 class="accent">STATISTIQUES & BONUS</h1>
+                <div id="stats-content" style="text-align: left; margin-top: 20px; line-height: 1.6;">
+                    <div
+                        style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <h3 style="margin-top:0; color: #00f2ff;">TEMPS DE MISSION</h3>
+                        <p id="stats-time" style="font-size: 1.5rem; font-weight: bold; margin: 5px 0;">00:00:00</p>
+                        <p id="stats-sector" style="color: #ffcc00; font-size: 0.9rem;">Secteur actuel : 1</p>
+                    </div>
+
+                    <h3 style="color: #00f2ff;">BONUS ACTIFS</h3>
+                    <div id="bonuses-list"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;">
+                        <!-- Rempli par JS -->
+                    </div>
                 </div>
+                <button onclick="window.toggleStats()"
+                    style="margin-top: 25px; width: 100%; background: #ff4444;">RETOUR</button>
             </div>
         </div>
 
@@ -187,11 +214,50 @@
         </div>
     </div>
 
+    <!-- Drone Hangar Modal -->
+    <div id="drone-hangar-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px; border-color: #0099ff;">
+            <h1 class="accent" style="color: #0099ff;">🚁 HANGAR DE DRONES</h1>
+            <p>Drones disponibles : <span id="hangar-drone-count" style="color: #00ff88; font-weight: bold;">0</span>
+            </p>
+            <p>Drones déployés : <span id="hangar-deployed-count" style="color: #ffcc00; font-weight: bold;">0</span>
+            </p>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="window.buyDrone(window.game.currentHangar)"
+                    style="flex: 1; background: #0099ff; color: white;">
+                    ACHETER DRONE (1000 💎)
+                </button>
+                <button onclick="window.deployDrone(window.game.currentHangar)"
+                    style="flex: 1; background: #00ff88; color: black;">
+                    DÉPLOYER (50⚡ + 20💎)
+                </button>
+            </div>
+            <button onclick="window.closeDroneHangar()"
+                style="margin-top: 20px; background: #ff4444; color: white; width: 100%;">
+                FERMER
+            </button>
+        </div>
+    </div>
+
+    <!-- Pause Menu Modal -->
+    <div id="pause-modal" class="modal" style="display: none; background: rgba(0,0,0,0.85);">
+        <div class="modal-content" style="max-width: 400px; border-color: #ffffff;">
+            <h1 class="accent" style="color: #ffffff;">PAUSE</h1>
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                <button onclick="window.togglePauseMenu()" style="background: #00f2ff; color: black;">REPRENDRE</button>
+                <button onclick="window.loadGame()" style="background: #ffcc00; color: black;">CHARGER DERNIÈRE
+                    SAUVEGARDE</button>
+                <button onclick="window.location.reload()" style="background: #ff4444; color: white;">QUITTER VERS LE
+                    MENU</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Script principal du jeu -->
     <script type="module" src="Main.js"></script>
     <div
         style="position: absolute; bottom: 10px; right: 20px; color: rgba(255, 255, 255, 0.3); font-size: 0.8rem; font-family: 'Inter', sans-serif; pointer-events: none; z-index: 1000;">
-        version alpha 0.3
+        version beta 0.8
     </div>
 </body>
 
