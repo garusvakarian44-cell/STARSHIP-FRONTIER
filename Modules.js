@@ -21,7 +21,9 @@ export class CryptoGenerator extends BaseModule {
 
     Render(draw) {
         if (PlayerInventory.isVirusActive) {
-            draw.IsometricCube(this.Position, 'rgba(255, 0, 0, 0.5)');
+            // Glow rouge pulsant
+            const alpha = 0.3 + Math.sin(Date.now() * 0.01) * 0.2;
+            draw.IsometricCube(this.Position, `rgba(255, 0, 0, ${alpha})`);
         }
         draw.IsometricImage(this.Position, 'cryptoModule.png', "Mineur de Crypto");
     }
@@ -98,13 +100,16 @@ export class RadioAntenna extends BaseModule {
     constructor() {
         super();
         this.Name = "Antenne Comm";
-        this.CryptoCost = 150;
+        this.CryptoCost = 200;
         this.timer = 0;
         this.incomeInterval = 60; // 1 minute
         this.incomeAmount = 50;
     }
 
     Update(deltaTime) {
+        // Le malware stoppe la progression du timer de l'antenne
+        if (PlayerInventory.isVirusActive) return;
+
         this.timer += deltaTime;
         if (this.timer >= this.incomeInterval) {
             PlayerInventory.CryptoAmount += this.incomeAmount;
@@ -113,6 +118,11 @@ export class RadioAntenna extends BaseModule {
         }
     }
     Render(draw) {
+        if (PlayerInventory.isVirusActive) {
+            // Glow rouge pulsant
+            const alpha = 0.3 + Math.sin(Date.now() * 0.01) * 0.2;
+            draw.IsometricCube(this.Position, `rgba(255, 0, 0, ${alpha})`);
+        }
         draw.IsometricImage(this.Position, 'antenne.png', "Antenne Comm");
     }
 }

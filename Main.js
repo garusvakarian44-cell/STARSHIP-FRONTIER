@@ -105,6 +105,85 @@ class MyGame {
 
         // Secret Discovery Persistence
         this.discoveredSecrets = JSON.parse(localStorage.getItem('apex_horizons_discovered_secrets') || '[]');
+
+        // Audio SFX
+        this.antenneSFX = new Audio('SFX/antenneComSFX.mp3');
+        this.antenneSFX.loop = true;
+        this.antenneSFX.volume = 0.4;
+
+        this.placingSFX = new Audio('SFX/placingSFX.mp3');
+        this.placingSFX.volume = 0.5;
+
+        this.notPlacingSFX = new Audio('SFX/notPlacingSFX.mp3');
+        this.notPlacingSFX.volume = 0.5;
+
+        this.clickSFX = new Audio('SFX/clicSFX.mp3');
+        this.clickSFX.volume = 1.0;
+
+        this.defeatSFX = new Audio('SFX/defeatSFX.mp3');
+        this.defeatSFX.volume = 0.6;
+
+        this.explosionSFX = new Audio('SFX/explosionSFX.mp3');
+        this.explosionSFX.volume = 0.5;
+
+        this.fenetreSFX = new Audio('SFX/fenetreSFX.mp3');
+        this.fenetreSFX.volume = 0.4;
+
+        this.transitionSFX = new Audio('SFX/transitionSFX.mp3');
+        this.transitionSFX.volume = 0.6;
+
+        this.winnerSFX = new Audio('SFX/winnerSFX.mp3');
+        this.winnerSFX.volume = 0.6;
+
+        // Music System
+        this.menuMusic = new Audio('musiques/menu.mp3');
+        this.menuMusic.loop = true;
+        this.menuMusic.volume = 0.4;
+        this.isMenuMusicPlaying = false;
+
+        this.ambientTracks = [
+            'musiques/ambient1.mp3',
+            'musiques/ambient2.mp3',
+            'musiques/ambient3.mp3',
+            'musiques/ambient4.mp3'
+        ];
+        this.lastTwoTracks = []; // On garde un historique pour éviter la répétition immédiate
+        this.ambientAudio = null;
+
+        // Global Interaction Listener to unlock Audio & Play Menu Music
+        const unlockAudio = () => {
+            // Activation du son de clic
+            if (this.clickSFX) {
+                this.clickSFX.currentTime = 0;
+                this.clickSFX.play().catch(e => { });
+            }
+
+            // Musique du menu (si on est encore sur l'écran titre)
+            if (!this.isGameStarted && !this.isMenuMusicPlaying) {
+                this.menuMusic.play().then(() => {
+                    if (this.isGameStarted) {
+                        this.menuMusic.pause();
+                        this.isMenuMusicPlaying = false;
+                    } else {
+                        this.isMenuMusicPlaying = true;
+                    }
+                }).catch(e => {
+                    // Toujours bloqué par le navigateur
+                });
+            }
+        };
+
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('keydown', unlockAudio);
+        window.addEventListener('pointerdown', unlockAudio);
+
+        // --- TENTATIVE D'AUTOPLAY IMMÉDIATE ---
+        // On essaye de lancer la musique dès que le script est chargé
+        this.menuMusic.play().then(() => {
+            this.isMenuMusicPlaying = true;
+        }).catch(e => {
+            console.log("Autoplay bloqué par le navigateur : attente d'interaction.");
+        });
     }
 
     GenerateGoals() {
@@ -132,6 +211,10 @@ class MyGame {
             this.isGamePaused = true;
             modal.style.display = 'flex';
             this.UpdateResearchUI();
+            if (this.fenetreSFX) {
+                this.fenetreSFX.currentTime = 0;
+                this.fenetreSFX.play().catch(e => { });
+            }
         }
     }
 
@@ -192,6 +275,10 @@ class MyGame {
             this.isGamePaused = true;
             modal.style.display = 'flex';
             this.UpdateStatsUI();
+            if (this.fenetreSFX) {
+                this.fenetreSFX.currentTime = 0;
+                this.fenetreSFX.play().catch(e => { });
+            }
         }
     }
 
@@ -258,7 +345,20 @@ class MyGame {
         if (menu) menu.style.display = 'none';
         if (successModal) successModal.style.display = 'none';
 
+        // Arrêter la musique du menu et d'ambiance
+        if (this.menuMusic) {
+            this.menuMusic.pause();
+            this.menuMusic.currentTime = 0;
+            this.isMenuMusicPlaying = false;
+        }
+
+        if (this.ambientAudio) {
+            this.ambientAudio.pause();
+            this.ambientAudio = null;
+        }
+
         // Reset & Scaling
+        this.completedRuns = 0;
         this.GenerateGoals();
         PlayerInventory.Reset();
         this.boonTimer = 120;
@@ -370,6 +470,11 @@ class MyGame {
         });
 
         modal.style.display = "flex";
+
+        if (this.fenetreSFX) {
+            this.fenetreSFX.currentTime = 0;
+            this.fenetreSFX.play().catch(e => { });
+        }
     }
 
     ShowSignalEvent() {
@@ -417,6 +522,11 @@ class MyGame {
         };
 
         modal.style.display = "flex";
+
+        if (this.fenetreSFX) {
+            this.fenetreSFX.currentTime = 0;
+            this.fenetreSFX.play().catch(e => { });
+        }
     }
 
     ShowMerchant() {
@@ -427,6 +537,11 @@ class MyGame {
         this.isGamePaused = true;
         modal.style.display = 'flex';
         container.innerHTML = "";
+
+        if (this.fenetreSFX) {
+            this.fenetreSFX.currentTime = 0;
+            this.fenetreSFX.play().catch(e => { });
+        }
 
         const possibleTrades = [
             { id: 'c_to_o', name: "Achat Oxygène", text: "200 Crypto -> 500 Oxygène", cost: { type: 'crypto', val: 200 }, give: { type: 'oxygen', val: 500 } },
@@ -457,12 +572,23 @@ class MyGame {
             row.querySelector('button').onclick = () => this.ExecuteTrade(t);
             container.appendChild(row);
         });
+
+        // Play SFX
+        if (this.antenneSFX) {
+            this.antenneSFX.play().catch(e => console.log("Audio play blocked: " + e));
+        }
     }
 
     CloseMerchant() {
         const modal = document.getElementById('merchant-modal');
         if (modal) modal.style.display = 'none';
         this.isGamePaused = false;
+
+        // Stop SFX
+        if (this.antenneSFX) {
+            this.antenneSFX.pause();
+            this.antenneSFX.currentTime = 0;
+        }
     }
 
     ExecuteTrade(trade) {
@@ -492,6 +618,10 @@ class MyGame {
         if (modal) {
             modal.style.display = 'flex';
             this.UpdateDroneHangarUI(hangar);
+            if (this.fenetreSFX) {
+                this.fenetreSFX.currentTime = 0;
+                this.fenetreSFX.play().catch(e => { });
+            }
         }
     }
 
@@ -644,11 +774,11 @@ class MyGame {
 
 
         // --- GESTION DE LA CAMÉRA (ESPACE + CLIC ou CLIC + ESPACE) ---
-        // On permet de bouger la caméra même en pause pour observer la station
         const isSpacePressed = Input.GetKey("Space");
+        const isAdvancedTutorial = this.tutorialStep >= 100 && this.tutorialStep <= 200;
+        const isDragging = isSpacePressed && this.mouseIsDown && !isAdvancedTutorial;
 
-        // Le drag fonctionne dès que les deux conditions sont vraies simultanément
-        if (isSpacePressed && this.mouseIsDown) {
+        if (isDragging) {
             const dx = Antigravity.mousePos.x - this.lastMousePos.x;
             const dy = Antigravity.mousePos.y - this.lastMousePos.y;
             Antigravity.camera.Position.x += dx;
@@ -658,30 +788,23 @@ class MyGame {
         this.lastMousePos.y = Antigravity.mousePos.y;
 
         // --- GESTION DU ZOOM (MOLETTE ou TRACKPAD) ---
-        // On ne zoome que si la souris n'est PAS sur le panneau du shop
         if (!this.shop.isMouseOver && Math.abs(Input.GetMouseWheel()) > 0) {
             const wheelDelta = Input.GetMouseWheel();
-            const zoomIn = wheelDelta < 0;  // Molette vers le haut = zoom avant
+            const zoomIn = wheelDelta < 0;
 
-            if (zoomIn) {
-                Antigravity.camera.Zoom *= 1.12; // Zoom avant : +12%
-            } else {
-                Antigravity.camera.Zoom /= 1.10; // Dézoom : -9.09%
-            }
+            if (zoomIn) Antigravity.camera.Zoom *= 1.12;
+            else Antigravity.camera.Zoom /= 1.10;
 
-            // Limites de zoom
             Antigravity.camera.Zoom = Math.max(0.5, Math.min(2.0, Antigravity.camera.Zoom));
-            Antigravity.mouseWheel = 0; // Consommer l'événement
+            Antigravity.mouseWheel = 0;
         }
 
         // --- AUTO-CENTRAGE CAMÉRA TUTORIEL AVANCÉ ---
-        // Pendant le tutoriel avancé, centrer automatiquement sur le module focusé
-        if (this.tutorialStep >= 100 && this.tutorialStep <= 200 && this.focusedModule) {
-            // Centre la caméra sur le module en glow
+        // On force le centrage pendant le tuto avancé (drag désactivé)
+        if (isAdvancedTutorial && this.focusedModule) {
             const targetX = Antigravity.width / 2 - this.focusedModule.Position.x * 40;
             const targetY = Antigravity.height / 2 - this.focusedModule.Position.z * 40;
 
-            // Interpolation pour un mouvement fluide
             Antigravity.camera.Position.x += (targetX - Antigravity.camera.Position.x) * 0.08;
             Antigravity.camera.Position.y += (targetY - Antigravity.camera.Position.y) * 0.08;
         }
@@ -734,6 +857,12 @@ class MyGame {
                     this.myBase = this.myBase.filter(m => m !== collision);
                     this.asteroids.splice(i, 1);
 
+                    // SFX Explosion
+                    if (this.explosionSFX) {
+                        this.explosionSFX.currentTime = 0;
+                        this.explosionSFX.play().catch(e => { });
+                    }
+
                     // Notification visuelle
                     const hintPopup = document.getElementById('start-hint');
                     if (hintPopup) {
@@ -757,6 +886,12 @@ class MyGame {
                             // Détruire l'astéroïde ciblé
                             const asteroid = m.drones[i].targetAsteroid;
                             this.asteroids = this.asteroids.filter(a => a !== asteroid);
+
+                            // SFX Explosion
+                            if (this.explosionSFX) {
+                                this.explosionSFX.currentTime = 0;
+                                this.explosionSFX.play().catch(e => { });
+                            }
                         } else if (result === 'returned') {
                             // Drone revenu, donner la science
                             PlayerInventory.SciencePoints += m.drones[i].scienceCollected;
@@ -847,8 +982,20 @@ class MyGame {
             // --- CONDITIONS DE DÉFAITE ---
             if (PlayerInventory.EnergyLevel <= 0 || PlayerInventory.OxygenLevel <= 0) {
                 this.isGameOver = true;
+
+                // Stopper toute musique d'ambiance en cas de défaite
+                if (this.ambientAudio) {
+                    this.ambientAudio.pause();
+                    this.ambientAudio = null;
+                }
+
                 const modal = document.getElementById('game-over');
                 const reasonElem = document.getElementById('death-reason');
+
+                if (this.defeatSFX) {
+                    this.defeatSFX.play().catch(e => { });
+                }
+
                 if (modal && reasonElem) {
                     modal.style.display = 'flex';
                     reasonElem.innerText = PlayerInventory.OxygenLevel <= 0
@@ -874,118 +1021,122 @@ class MyGame {
             const hintPopup = document.getElementById('start-hint');
             const hintIcon = document.getElementById('hint-icon');
 
-            switch (this.tutorialStep) {
-                case 0: // Étape Oxygène
-                    const oxygenCount = this.myBase.filter(m => m instanceof OxygenReserve).length;
-                    if (oxygenCount >= 2) {
-                        if (hintPopup) hintPopup.style.display = 'none';
-                        this.tutorialStep = 1;
-                        this.tutorialTimer = 3; // Attendre 3 secondes
-                    }
-                    break;
-
-                case 1: // Attente avant Crypto
-                    this.tutorialTimer -= deltaTime;
-                    if (this.tutorialTimer <= 0) {
-                        this.tutorialStep = 2;
-                        if (hintPopup) {
-                            hintPopup.style.display = 'block';
-                            hintIcon.innerText = "💰";
-                            hintTitle.innerText = "Expansion Économique";
-                            hintTitle.style.color = "#00ff88";
-                            hintDesc.innerHTML = "Placez <strong>2 générateurs de crypto</strong> au total pour sécuriser vos revenus.";
-                        }
-                    }
-                    break;
-
-                case 2: // Étape Crypto
-                    const minerCount = this.myBase.filter(m => m instanceof CryptoGenerator).length;
-                    if (minerCount >= 2) {
-                        if (hintPopup) hintPopup.style.display = 'none';
-                        this.tutorialStep = 2.5;
-                        this.tutorialTimer = 5; // Attendre 5 secondes
-                    }
-                    break;
-
-                case 2.5: // Attente avant alerte Énergie
-                    this.tutorialTimer -= deltaTime;
-                    // On déclenche l'étape 3 seulement si le timer est fini ET que l'énergie baisse
-                    if (this.tutorialTimer <= 0 && totalEnergyProd < totalEnergyDemand) {
-                        this.tutorialStep = 3;
-                        if (hintPopup) {
-                            hintPopup.style.display = 'block';
-                            hintIcon.innerText = "⚡";
-                            hintTitle.innerText = "Alerte Énergie";
-                            hintTitle.style.color = "#ff4444";
-                            hintDesc.innerHTML = "L'énergie est critique !<br>Posez <strong>3 Panneaux Solaires</strong> au total d'urgence !";
-                        }
-                    }
-                    break;
-
-                case 3: // Étape Énergie
-                    const solarCount = this.myBase.filter(m => m instanceof SolarPanel).length;
-                    if (hintDesc) {
-                        hintDesc.innerHTML = `L'énergie est critique !<br>Posez <strong>3 Panneaux Solaires</strong> au total. (${solarCount}/4)`;
-                    }
-                    if (solarCount >= 4) {
-                        if (hintPopup) hintPopup.style.display = 'none';
-                        this.tutorialStep = 3.5;
-                        this.tutorialTimer = 15; // Attendre 15 secondes après l'énergie
-                    }
-                    break;
-
-                case 3.5: // Attente avant Population
-                    this.tutorialTimer -= deltaTime;
-                    if (this.tutorialTimer <= 0) {
-                        this.tutorialStep = 4;
-                        if (hintPopup) {
-                            hintPopup.style.display = 'block';
-                            hintIcon.innerText = "👥";
-                            hintTitle.innerText = "Expansion Humaine";
-                            hintTitle.style.color = "#00f2ff";
-                            hintDesc.innerHTML = "Placez <strong>3 Dortoirs</strong> au total.<br>⚠️ Surveillez bien vos réserves d'<strong>Oxygène</strong> !";
-                        }
-                    }
-                    break;
-
-                case 4: // Étape Population (Fin du tuto)
-                    const dortoirCount = this.myBase.filter(m => m instanceof Dortoir).length;
-                    if (hintDesc) {
-                        hintDesc.innerHTML = `Placez <strong>3 Dortoirs</strong> au total. (${dortoirCount}/4)<br>⚠️ Surveillez bien vos réserves d'<strong>Oxygène</strong> !`;
-                    }
-                    if (dortoirCount >= 4) {
-                        this.tutorialStep = 5;
-                        this.tutorialTimer = 60; // 60 secondes de survie
-                        if (hintPopup) {
-                            hintPopup.style.display = 'block';
-                            hintIcon.innerText = "⏳";
-                            hintTitle.innerText = "Phase de Survie";
-                            hintTitle.style.color = "#ffcc00";
-                        }
-                    }
-                    break;
-
-                case 5: // Phase de survie finale
-                    this.tutorialTimer -= deltaTime;
-                    if (hintDesc) {
-                        hintDesc.innerHTML = `Maintenez la station opérationnelle pendant encore <strong>${Math.ceil(this.tutorialTimer)}s</strong>.`;
-                    }
-                    if (this.tutorialTimer <= 0) {
-                        // Check prod positive (Pas de food dans le tuto basique)
-                        if (totalEnergyProd >= totalEnergyDemand && totalOxygenProd >= totalOxygenDemand) {
-                            this.tutorialStep = 6;
+            // On ne lance le switch du tuto QUE si on n'est pas en sandbox
+            if (!PlayerInventory.isSandboxMode && this.tutorialStep < 10) {
+                switch (this.tutorialStep) {
+                    case 0: // Étape Oxygène
+                        const oxygenCount = this.myBase.filter(m => m instanceof OxygenReserve).length;
+                        if (oxygenCount >= 2) {
                             if (hintPopup) hintPopup.style.display = 'none';
-                            const successModal = document.getElementById('tutorial-success');
-                            if (successModal) successModal.style.display = 'flex';
-                        } else {
-                            // Feedback visuel si pas stable ?
-                            if (hintDesc) hintDesc.innerHTML = `Stabilisez vos productions (Énergie, Oxygène) pour valider !`;
+                            this.tutorialStep = 1;
+                            this.tutorialTimer = 3; // Attendre 3 secondes
                         }
-                    }
-                    break;
+                        break;
 
-                // --- TUTO AVANCÉ (Step 100+) ---
-                // --- TUTO AVANCÉ (Step 100+) ---
+                    case 1: // Attente avant Crypto
+                        this.tutorialTimer -= deltaTime;
+                        if (this.tutorialTimer <= 0) {
+                            this.tutorialStep = 2;
+                            if (hintPopup) {
+                                hintPopup.style.display = 'block';
+                                hintIcon.innerText = "💰";
+                                hintTitle.innerText = "Expansion Économique";
+                                hintTitle.style.color = "#00ff88";
+                                hintDesc.innerHTML = "Placez <strong>2 générateurs de crypto</strong> au total pour sécuriser vos revenus.";
+                            }
+                        }
+                        break;
+
+                    case 2: // Étape Crypto
+                        const minerCount = this.myBase.filter(m => m instanceof CryptoGenerator).length;
+                        if (minerCount >= 2) {
+                            if (hintPopup) hintPopup.style.display = 'none';
+                            this.tutorialStep = 2.5;
+                            this.tutorialTimer = 5; // Attendre 5 secondes
+                        }
+                        break;
+
+                    case 2.5: // Attente avant alerte Énergie
+                        this.tutorialTimer -= deltaTime;
+                        // On déclenche l'étape 3 seulement si le timer est fini ET que l'énergie baisse
+                        if (this.tutorialTimer <= 0 && totalEnergyProd < totalEnergyDemand) {
+                            this.tutorialStep = 3;
+                            if (hintPopup) {
+                                hintPopup.style.display = 'block';
+                                hintIcon.innerText = "⚡";
+                                hintTitle.innerText = "Alerte Énergie";
+                                hintTitle.style.color = "#ff4444";
+                                hintDesc.innerHTML = "L'énergie est critique !<br>Posez <strong>3 Panneaux Solaires</strong> au total d'urgence !";
+                            }
+                        }
+                        break;
+
+                    case 3: // Étape Énergie
+                        const solarCount = this.myBase.filter(m => m instanceof SolarPanel).length;
+                        if (hintDesc) {
+                            hintDesc.innerHTML = `L'énergie est critique !<br>Posez <strong>3 Panneaux Solaires</strong> au total. (${solarCount}/4)`;
+                        }
+                        if (solarCount >= 4) {
+                            if (hintPopup) hintPopup.style.display = 'none';
+                            this.tutorialStep = 3.5;
+                            this.tutorialTimer = 15; // Attendre 15 secondes après l'énergie
+                        }
+                        break;
+
+                    case 3.5: // Attente avant Population
+                        this.tutorialTimer -= deltaTime;
+                        if (this.tutorialTimer <= 0) {
+                            this.tutorialStep = 4;
+                            if (hintPopup) {
+                                hintPopup.style.display = 'block';
+                                hintIcon.innerText = "👥";
+                                hintTitle.innerText = "Expansion Humaine";
+                                hintTitle.style.color = "#00f2ff";
+                                hintDesc.innerHTML = "Placez <strong>3 Dortoirs</strong> au total.<br>⚠️ Surveillez bien vos réserves d'<strong>Oxygène</strong> !";
+                            }
+                        }
+                        break;
+
+                    case 4: // Étape Population (Fin du tuto)
+                        const dortoirCount = this.myBase.filter(m => m instanceof Dortoir).length;
+                        if (hintDesc) {
+                            hintDesc.innerHTML = `Placez <strong>3 Dortoirs</strong> au total. (${dortoirCount}/4)<br>⚠️ Surveillez bien vos réserves d'<strong>Oxygène</strong> !`;
+                        }
+                        if (dortoirCount >= 4) {
+                            this.tutorialStep = 5;
+                            this.tutorialTimer = 60; // 60 secondes de survie
+                            if (hintPopup) {
+                                hintPopup.style.display = 'block';
+                                hintIcon.innerText = "⏳";
+                                hintTitle.innerText = "Phase de Survie";
+                                hintTitle.style.color = "#ffcc00";
+                            }
+                        }
+                        break;
+
+                    case 5: // Phase de survie finale
+                        this.tutorialTimer -= deltaTime;
+                        if (hintDesc) {
+                            hintDesc.innerHTML = `Maintenez la station opérationnelle pendant encore <strong>${Math.ceil(this.tutorialTimer)}s</strong>.`;
+                        }
+                        if (this.tutorialTimer <= 0) {
+                            // Check prod positive (Pas de food dans le tuto basique)
+                            if (totalEnergyProd >= totalEnergyDemand && totalOxygenProd >= totalOxygenDemand) {
+                                this.tutorialStep = 6;
+                                if (hintPopup) hintPopup.style.display = 'none';
+                                const successModal = document.getElementById('tutorial-success');
+                                if (successModal) successModal.style.display = 'flex';
+                            } else {
+                                // Feedback visuel si pas stable ?
+                                if (hintDesc) hintDesc.innerHTML = `Stabilisez vos productions (Énergie, Oxygène) pour valider !`;
+                            }
+                        }
+                        break;
+                }
+            }
+
+            // --- TUTO AVANCÉ (Step 100+) ---
+            switch (this.tutorialStep) {
                 case 100: // Init Setup déjà fait dans startAdvancedTutorial
                     this.tutorialStep = 101;
                     this.FocusCameraOn(SolarPanel);
@@ -1095,8 +1246,8 @@ class MyGame {
                     break;
             }
 
-            // Ratio pour la prod de crypto
-            this.EnergyRatio = (PlayerInventory.EnergyLevel > 0 || totalEnergyProd >= totalEnergyDemand) ? 1 : 0;
+            // Ratio recalculé pour le HUD
+            this.EnergyRatio = ((PlayerInventory.EnergyLevel > 0 || totalEnergyProd >= totalEnergyDemand) ? 1 : 0);
 
             // On calcule ces variables pour le HUD qui est mis à jour plus bas
             this._hudData = {
@@ -1170,6 +1321,11 @@ class MyGame {
             if (this.currentGoal.check(this) && !this.isJumpDriveSpawned) {
                 this.isJumpDriveSpawned = true;
                 this.SpawnJumpDrive();
+
+                if (this.winnerSFX) {
+                    this.winnerSFX.currentTime = 0;
+                    this.winnerSFX.play().catch(e => { });
+                }
 
                 const successModal = document.getElementById('tutorial-success');
                 if (successModal) {
@@ -1329,7 +1485,7 @@ class MyGame {
             // Dessiner le fantôme avec le message correspondant
             Draw.IsometricCube(snappedPos, ghostColor, statusMessage);
 
-            if (Input.GetMouseButtonDown(0)) {
+            if (Input.GetMouseButtonDown(0) && !Input.GetKey("Space")) {
                 if ((isAdjacent || isReplacement) && canAfford && hasSpace && !isAntennaLimitReached) {
                     if (isReplacement) {
                         // Supprimer l'ancien module
@@ -1346,11 +1502,22 @@ class MyGame {
                     newModule.Name = proto.Name;
                     this.myBase.push(newModule);
 
+                    if (this.placingSFX) {
+                        this.placingSFX.currentTime = 0;
+                        this.placingSFX.play().catch(e => console.log("Audio play blocked: " + e));
+                    }
+
                     if (newModule instanceof RadioAntenna) {
                         // this.ShowMerchant(); // On ne montre plus le marchand auto
                     }
 
                     this.shop.selectedModuleForPlacement = null;
+                } else {
+                    // Clic sur une case invalide ou ressources insuffisantes
+                    if (this.notPlacingSFX) {
+                        this.notPlacingSFX.currentTime = 0;
+                        this.notPlacingSFX.play().catch(e => console.log("Audio play blocked: " + e));
+                    }
                 }
             }
         }
@@ -1361,7 +1528,7 @@ class MyGame {
             if (jumpModule) {
                 const mousePos = Input.GetMouseToWorldPlane();
                 const dist = Math.sqrt(Math.pow(mousePos.X - jumpModule.GridX, 2) + Math.pow(mousePos.Z - jumpModule.GridZ, 2));
-                if (dist < 1.0 && Input.GetMouseButtonDown(0)) {
+                if (dist < 1.0 && Input.GetMouseButtonDown(0) && !Input.GetKey("Space")) {
                     this.ExecuteJump();
                 }
             }
@@ -1370,7 +1537,7 @@ class MyGame {
         // Interaction avec les Modules (ex: Antenne)
         // PRIORITÉ : Si on a un module en main (selectedModuleForPlacement), on NE DOIT PAS ouvrir le menu
         if (this.shop.selectedModuleForPlacement == null && !this.shop.isMouseOver && !this.isGamePaused) {
-            if (Input.GetMouseButtonDown(0)) {
+            if (Input.GetMouseButtonDown(0) && !Input.GetKey("Space")) {
                 const mousePos = Input.GetMouseToWorldPlane();
                 const gx = Math.round(mousePos.X);
                 const gz = Math.round(mousePos.Z);
@@ -1454,6 +1621,16 @@ class MyGame {
         this.isJumping = true;
         this.jumpTimer = 2.5; // Durée du saut
 
+        if (this.transitionSFX) {
+            this.transitionSFX.play().catch(e => { });
+        }
+
+        // Couper la musique d'ambiance pendant le saut
+        if (this.ambientAudio) {
+            this.ambientAudio.pause();
+            this.ambientAudio = null;
+        }
+
         // Initialiser les météorites de transition
         this.jumpMeteorites = [];
         for (let i = 0; i < 20; i++) {
@@ -1472,6 +1649,11 @@ class MyGame {
         this.completedRuns++;
         localStorage.setItem('apex_horizons_completed_runs', this.completedRuns);
         this.isJumpDriveSpawned = false;
+
+        if (this.winnerSFX) {
+            this.winnerSFX.currentTime = 0;
+            this.winnerSFX.play().catch(e => { });
+        }
 
         // On enlève le cœur de saut
         this.myBase = this.myBase.filter(m => !(m instanceof JumpDrive));
@@ -1505,6 +1687,7 @@ class MyGame {
         const data = {
             completedRuns: this.completedRuns,
             playTime: this.playTime,
+            tutorialStep: this.tutorialStep,
             inventory: {
                 CryptoAmount: PlayerInventory.CryptoAmount,
                 EnergyLevel: PlayerInventory.EnergyLevel,
@@ -1554,8 +1737,16 @@ class MyGame {
         // Restaurer les variables de jeu
         this.completedRuns = data.completedRuns;
         this.playTime = data.playTime;
+        this.tutorialStep = data.tutorialStep || 10; // Par défaut sandbox si non défini
         this.isGameStarted = true;
         this.isGamePaused = false;
+
+        // MUSIQUE : S'assurer que le menu s'arrête si on charge depuis le pause menu
+        if (this.menuMusic) {
+            this.menuMusic.pause();
+            this.menuMusic.currentTime = 0;
+            this.isMenuMusicPlaying = false;
+        }
 
         // Restaurer la base
         const classMap = {
@@ -1604,9 +1795,34 @@ class MyGame {
         if (modal.style.display === 'flex') {
             modal.style.display = 'none';
             this.isGamePaused = false;
+
+            // MUSIQUE : Arrêter la musique du menu, reprendre l'ambiance
+            if (this.menuMusic) {
+                this.menuMusic.pause();
+                this.isMenuMusicPlaying = false;
+            }
+            if (this.ambientAudio) {
+                this.ambientAudio.play().catch(e => { });
+            }
         } else {
             modal.style.display = 'flex';
             this.isGamePaused = true;
+
+            // MUSIQUE : Mettre en pause l'ambiance, lancer le menu
+            if (this.ambientAudio) {
+                this.ambientAudio.pause();
+            }
+            if (this.menuMusic) {
+                this.menuMusic.currentTime = 0;
+                this.menuMusic.play().then(() => {
+                    this.isMenuMusicPlaying = true;
+                }).catch(e => { });
+            }
+
+            if (this.fenetreSFX) {
+                this.fenetreSFX.currentTime = 0;
+                this.fenetreSFX.play().catch(e => { });
+            }
         }
     }
 
@@ -1690,6 +1906,11 @@ class MyGame {
                     <button onclick="window.nextTutorialStep()" style="background:#00f2ff; color:#000; border:none; padding:5px 10px; font-weight:bold; cursor:pointer; border-radius:4px;">COMPRIS</button>
                 </div>
             `;
+
+            if (this.fenetreSFX) {
+                this.fenetreSFX.currentTime = 0;
+                this.fenetreSFX.play().catch(e => { });
+            }
         }
     }
 
@@ -1705,6 +1926,55 @@ class MyGame {
         Antigravity.camera.Position.y = Antigravity.height / 2;
         Antigravity.camera.Position.z = 0;
     }
+
+    UpdateAmbientMusic() {
+        if (!this.isGameStarted || this.isGameOver || this.isJumping || this.isGamePaused) return;
+
+        // Sécurité : s'assurer que la musique du menu ne tourne pas en jeu
+        if (this.isMenuMusicPlaying && this.menuMusic) {
+            this.menuMusic.pause();
+            this.isMenuMusicPlaying = false;
+        }
+
+        // Si aucune musique ne joue, on en choisit une nouvelle
+        if (!this.ambientAudio) {
+            this.playRandomAmbient();
+        }
+    }
+
+    playRandomAmbient() {
+        // Filtrer pour exclure les deux dernières pistes jouées
+        const candidates = this.ambientTracks.filter(track => !this.lastTwoTracks.includes(track));
+
+        // Sécurité au cas où la liste serait vide
+        if (candidates.length === 0) return;
+
+        const choice = candidates[Math.floor(Math.random() * candidates.length)];
+
+        // Mettre à jour l'historique
+        this.lastTwoTracks.push(choice);
+        if (this.lastTwoTracks.length > 2) {
+            this.lastTwoTracks.shift(); // Garder seulement les deux dernières
+        }
+
+        if (this.ambientAudio) {
+            this.ambientAudio.pause();
+            this.ambientAudio = null;
+        }
+
+        this.ambientAudio = new Audio(choice);
+        this.ambientAudio.volume = 0.3;
+        this.ambientAudio.play().catch(e => {
+            console.log("Ambient music blocked by browser: ", e);
+            this.ambientAudio = null;
+        });
+
+        if (this.ambientAudio) {
+            this.ambientAudio.onended = () => {
+                this.ambientAudio = null; // Déclenchera un nouveau choix à la prochaine frame
+            };
+        }
+    }
 }
 
 // Initialisation et boucle de jeu
@@ -1719,6 +1989,7 @@ function loop(timestamp) {
 
     Antigravity.Clear();
     game.Update(deltaTime || 0);
+    game.UpdateAmbientMusic();
 
     requestAnimationFrame(loop);
 }

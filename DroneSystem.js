@@ -11,7 +11,7 @@ export class DroneHangar extends BaseModule {
         this.drones = []; // Drones déployés (instances de Drone)
     }
     Render(draw) {
-        draw.IsometricImage(this.Position, 'drone_module.png', this.Name);
+        draw.IsometricImage(this.Position, 'drone_module.png', "Hangar");
     }
 }
 
