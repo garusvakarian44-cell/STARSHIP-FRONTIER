@@ -337,10 +337,7 @@ class MyGame {
     StartRun(isSandbox) {
         const menu = document.getElementById('main-menu');
         const successModal = document.getElementById('tutorial-success');
-        const hintPopup = document.getElementById('start-hint');
-        const hintTitle = document.getElementById('hint-title');
-        const hintDesc = document.getElementById('hint-desc');
-        const hintIcon = document.getElementById('hint-icon');
+        const hud = document.getElementById('hud');
 
         if (menu) menu.style.display = 'none';
         if (successModal) successModal.style.display = 'none';
@@ -385,10 +382,12 @@ class MyGame {
             const foodHUD = document.getElementById('food-display');
             if (foodHUD) foodHUD.style.display = 'flex';
 
+            const hintPopup = document.getElementById('start-hint');
             const hasVisitedSandbox = localStorage.getItem('apex_horizons_visited_sandbox');
             if (hintPopup && !hasVisitedSandbox) {
+                const hintTitle = document.getElementById('hint-title');
+                const hintDesc = document.getElementById('hint-desc');
                 hintPopup.style.display = 'block';
-                hintIcon.innerText = "🚀";
                 hintTitle.innerText = "Mode Survie Débloqué";
                 hintTitle.style.color = "#00ff88";
                 hintDesc.innerHTML = `
@@ -495,7 +494,6 @@ class MyGame {
                 const hintPopup = document.getElementById('start-hint');
                 if (hintPopup) {
                     hintPopup.style.display = 'block';
-                    document.getElementById('hint-icon').innerText = "👾";
                     document.getElementById('hint-title').innerText = "VIRUS DÉTECTÉ";
                     document.getElementById('hint-title').style.color = "#ff4444";
                     document.getElementById('hint-desc').innerText = "Un malware ralentit vos mineurs pendant 20s !";
@@ -507,7 +505,6 @@ class MyGame {
                 const hintPopup = document.getElementById('start-hint');
                 if (hintPopup) {
                     hintPopup.style.display = 'block';
-                    document.getElementById('hint-icon').innerText = "💎";
                     document.getElementById('hint-title').innerText = "DONNÉES VENDUES";
                     document.getElementById('hint-title').style.color = "#00ff88";
                     document.getElementById('hint-desc').innerText = "Le signal contenait des infos précieuses. +250 Crypto !";
@@ -867,7 +864,6 @@ class MyGame {
                     const hintPopup = document.getElementById('start-hint');
                     if (hintPopup) {
                         hintPopup.style.display = 'block';
-                        document.getElementById('hint-icon').innerText = '💥';
                         document.getElementById('hint-title').innerText = 'IMPACT ASTÉROÏDE';
                         document.getElementById('hint-title').style.color = '#ff4444';
                         document.getElementById('hint-desc').innerText = `Un astéroïde a détruit ${collision.Name} !`;
@@ -1019,7 +1015,6 @@ class MyGame {
             const hintTitle = document.getElementById('hint-title');
             const hintDesc = document.getElementById('hint-desc');
             const hintPopup = document.getElementById('start-hint');
-            const hintIcon = document.getElementById('hint-icon');
 
             // On ne lance le switch du tuto QUE si on n'est pas en sandbox
             if (!PlayerInventory.isSandboxMode && this.tutorialStep < 10) {
@@ -1039,7 +1034,6 @@ class MyGame {
                             this.tutorialStep = 2;
                             if (hintPopup) {
                                 hintPopup.style.display = 'block';
-                                hintIcon.innerText = "💰";
                                 hintTitle.innerText = "Expansion Économique";
                                 hintTitle.style.color = "#00ff88";
                                 hintDesc.innerHTML = "Placez <strong>2 générateurs de crypto</strong> au total pour sécuriser vos revenus.";
@@ -1063,7 +1057,6 @@ class MyGame {
                             this.tutorialStep = 3;
                             if (hintPopup) {
                                 hintPopup.style.display = 'block';
-                                hintIcon.innerText = "⚡";
                                 hintTitle.innerText = "Alerte Énergie";
                                 hintTitle.style.color = "#ff4444";
                                 hintDesc.innerHTML = "L'énergie est critique !<br>Posez <strong>3 Panneaux Solaires</strong> au total d'urgence !";
@@ -1089,7 +1082,6 @@ class MyGame {
                             this.tutorialStep = 4;
                             if (hintPopup) {
                                 hintPopup.style.display = 'block';
-                                hintIcon.innerText = "👥";
                                 hintTitle.innerText = "Expansion Humaine";
                                 hintTitle.style.color = "#00f2ff";
                                 hintDesc.innerHTML = "Placez <strong>3 Dortoirs</strong> au total.<br>⚠️ Surveillez bien vos réserves d'<strong>Oxygène</strong> !";
@@ -1107,7 +1099,6 @@ class MyGame {
                             this.tutorialTimer = 60; // 60 secondes de survie
                             if (hintPopup) {
                                 hintPopup.style.display = 'block';
-                                hintIcon.innerText = "⏳";
                                 hintTitle.innerText = "Phase de Survie";
                                 hintTitle.style.color = "#ffcc00";
                             }
@@ -1673,7 +1664,6 @@ class MyGame {
         const hintPopup = document.getElementById('start-hint');
         if (hintPopup) {
             hintPopup.style.display = 'block';
-            document.getElementById('hint-icon').innerText = "✨";
             document.getElementById('hint-title').innerText = "SAUT EFFECTUÉ";
             document.getElementById('hint-title').style.color = "#00f2ff";
             document.getElementById('hint-desc').innerText = "Nouveau secteur atteint. Vigilance, les défis augmentent !";
@@ -1879,7 +1869,6 @@ class MyGame {
         if (this.tutorialStep === 0) {
             const hintPopup = document.getElementById('start-hint');
             if (hintPopup) {
-                const hintIcon = document.getElementById('hint-icon');
                 const hintTitle = document.getElementById('hint-title');
                 const hintDesc = document.getElementById('hint-desc');
 
@@ -1894,8 +1883,6 @@ class MyGame {
         const hintPopup = document.getElementById('start-hint');
         if (hintPopup) {
             hintPopup.style.display = 'block';
-            const hintIcon = document.getElementById('hint-icon');
-            if (hintIcon) hintIcon.innerText = " "; // Vider l'icône, ou la cacher
 
             document.getElementById('hint-title').innerText = title;
             document.getElementById('hint-title').style.color = "#00f2ff";
