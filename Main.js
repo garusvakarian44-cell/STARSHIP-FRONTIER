@@ -1140,7 +1140,7 @@ class MyGame {
                 case 100: // Init Setup déjà fait dans startAdvancedTutorial
                     this.tutorialStep = 101;
                     this.FocusCameraOn(SolarPanel);
-                    this.ShowTutorialPopup("Solaire ⚡", "Le Panneau Solaire génère de l'Énergie. C'est la base de toute station.", "102");
+                    this.ShowTutorialPopup("SOLAIRE", "Le Panneau Solaire génère de l'Énergie. C'est la base de toute station.", "102");
                     break;
                 case 101:
                     // Attente clic bouton "Compris" qui fait NextTutorialStep() -> passe à 102
@@ -1883,7 +1883,6 @@ class MyGame {
                 const hintTitle = document.getElementById('hint-title');
                 const hintDesc = document.getElementById('hint-desc');
 
-                hintIcon.innerText = "⚠️";
                 hintTitle.innerText = "Survie Initiale";
                 hintTitle.style.color = "#ff6400";
                 hintDesc.innerHTML = "Achetez <strong>2 Réservoirs à Oxygène</strong>.";
@@ -1895,7 +1894,9 @@ class MyGame {
         const hintPopup = document.getElementById('start-hint');
         if (hintPopup) {
             hintPopup.style.display = 'block';
-            document.getElementById('hint-icon').innerText = "ℹ️";
+            const hintIcon = document.getElementById('hint-icon');
+            if (hintIcon) hintIcon.innerText = " "; // Vider l'icône, ou la cacher
+
             document.getElementById('hint-title').innerText = title;
             document.getElementById('hint-title').style.color = "#00f2ff";
 

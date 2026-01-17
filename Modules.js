@@ -144,8 +144,17 @@ export class ScienceLab extends BaseModule {
         super();
         this.Name = "Laboratoire";
         this.CryptoCost = 200;
-        this.ScienceRate = 1; // 1 point par minute (géré par Main)
+        this.ScienceRate = 1; // 1 point par minute
         this.EnergyConsumption = 5.0;
+        this.timer = 0;
+    }
+
+    Update(deltaTime) {
+        this.timer += deltaTime;
+        if (this.timer >= 60) { // Every 60 seconds (1 minute)
+            PlayerInventory.SciencePoints += this.ScienceRate;
+            this.timer = 0;
+        }
     }
     Render(draw) {
         draw.IsometricImage(this.Position, 'labo(1).png', this.Name);

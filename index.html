@@ -40,8 +40,8 @@
         <header>
             <h1 id="game-title">STARSHIP <span class="accent">FRONTIER</span></h1>
             <div class="controls-hint">
-                <span>🖱️ Clic gauche : Placer</span>
-                <span>🛒 Shop : Sélectionnez un module</span>
+                <span>Clic gauche : Placer</span>
+                <span>Shop : Sélectionnez un module</span>
             </div>
             <div id="goal-hud" class="hud-item"
                 style="position: absolute; top: 30px; right: 30px; border-left: 2px solid #ffcc00; display: none; pointer-events: auto; z-index: 50; box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 0 10px rgba(255, 204, 0, 0.05); width: 220px;">
@@ -94,7 +94,6 @@
                 onclick="window.toggleStats()">
                 <div
                     style="height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(0, 242, 255, 0.05);">
-                    <span style="font-size: 1.2rem;">📊</span>
                     <span class="label" style="margin: 0; color: #fff; font-weight: bold;">STATS</span>
                 </div>
             </div>
@@ -131,7 +130,7 @@
         <!-- Start Hint -->
         <div id="start-hint" class="hint-popup" style="display: none;">
             <div class="hint-content">
-                <span class="hint-icon" id="hint-icon">⚠️</span>
+                <!-- Icon removed for cleaner look, or use SVG if needed -->
                 <div class="hint-text">
                     <p id="hint-title" style="margin:0; font-weight: bold; color: #ff6400;">Survie Initiale</p>
                     <p id="hint-desc" style="margin:5px 0 0 0;">Vos réserves baissent ! <br>Achetez <strong>2 Réservoirs
@@ -189,7 +188,7 @@
         <div id="merchant-modal" class="modal" style="display: none;">
             <div class="modal-content"
                 style="max-width: 600px; border-color: #ffcc00; background: rgba(20, 20, 20, 0.95);">
-                <h1 class="accent" style="color: #ffcc00;">🛰️ CARGO MARCHAND</h1>
+                <h1 class="accent" style="color: #ffcc00;">CARGO MARCHAND</h1>
                 <p>Un vaisseau de passage propose des échanges de ressources.</p>
                 <div id="trade-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
                     <!-- Rempli par JS -->
@@ -202,7 +201,7 @@
         <!-- Research Tree Modal -->
         <div id="research-modal" class="modal" style="display: none; background: rgba(0,0,0,0.9);">
             <div class="modal-content" style="max-width: 800px; border-color: #f1c40f;">
-                <h1 class="accent" style="color: #f1c40f;">🔬 ARCHIVES SCIENTIFIQUES</h1>
+                <h1 class="accent" style="color: #f1c40f;">ARCHIVES SCIENTIFIQUES</h1>
                 <p>Améliorez votre station grâce à la technologie. Points : <span id="research-points">0</span></p>
                 <div id="research-grid"
                     style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
@@ -217,7 +216,7 @@
     <!-- Drone Hangar Modal -->
     <div id="drone-hangar-modal" class="modal" style="display: none;">
         <div class="modal-content" style="max-width: 500px; border-color: #0099ff;">
-            <h1 class="accent" style="color: #0099ff;">🚁 HANGAR DE DRONES</h1>
+            <h1 class="accent" style="color: #0099ff;">HANGAR DE DRONES</h1>
             <p>Drones disponibles : <span id="hangar-drone-count" style="color: #00ff88; font-weight: bold;">0</span>
             </p>
             <p>Drones déployés : <span id="hangar-deployed-count" style="color: #ffcc00; font-weight: bold;">0</span>
