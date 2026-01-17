@@ -25,7 +25,7 @@ export class CryptoGenerator extends BaseModule {
             const alpha = 0.3 + Math.sin(Date.now() * 0.01) * 0.2;
             draw.IsometricCube(this.Position, `rgba(255, 0, 0, ${alpha})`);
         }
-        draw.IsometricImage(this.Position, 'cryptoModule.png', "Mineur de Crypto");
+        draw.IsometricImage(this.Position, 'images/cryptoModule.png', "Mineur de Crypto");
     }
 }
 
@@ -38,7 +38,7 @@ export class SolarPanel extends BaseModule {
     }
 
     Render(draw) {
-        draw.IsometricImage(this.Position, 'panel.png', "Panneau Solaire");
+        draw.IsometricImage(this.Position, 'images/panel.png', "Panneau Solaire");
     }
 }
 
@@ -51,7 +51,7 @@ export class OxygenReserve extends BaseModule {
     }
 
     Render(draw) {
-        draw.IsometricImage(this.Position, 'oxygen.png', "Réserve d'Oxygène");
+        draw.IsometricImage(this.Position, 'images/oxygen.png', "Réserve d'Oxygène");
     }
 }
 
@@ -67,7 +67,7 @@ export class Dortoir extends BaseModule {
     }
 
     Render(draw) {
-        draw.IsometricImage(this.Position, 'dortoir.png', "Dortoir");
+        draw.IsometricImage(this.Position, 'images/dortoir.png', "Dortoir");
     }
 }
 
@@ -80,7 +80,7 @@ export class Greenhouse extends BaseModule {
         this.FoodProduction = 2.0;   // Produit 2 nourriture/sec
     }
     Render(draw) {
-        draw.IsometricImage(this.Position, 'serre.png', "Serre");
+        draw.IsometricImage(this.Position, 'images/serre.png', "Serre");
     }
 }
 
@@ -92,7 +92,7 @@ export class BatteryModule extends BaseModule {
         this.StorageBonus = 500; // Ajoute 500 de capacité
     }
     Render(draw) {
-        draw.IsometricImage(this.Position, 'batterie.png', "Banque de Batteries");
+        draw.IsometricImage(this.Position, 'images/batterie.png', "Banque de Batteries");
     }
 }
 
@@ -123,7 +123,7 @@ export class RadioAntenna extends BaseModule {
             const alpha = 0.3 + Math.sin(Date.now() * 0.01) * 0.2;
             draw.IsometricCube(this.Position, `rgba(255, 0, 0, ${alpha})`);
         }
-        draw.IsometricImage(this.Position, 'antenne.png', "Antenne Comm");
+        draw.IsometricImage(this.Position, 'images/antenne.png', "Antenne Comm");
     }
 }
 
@@ -135,7 +135,7 @@ export class RecyclingModule extends BaseModule {
         this.StorageBonus = 500; // Ajoute 500 de capacité d'oxygène
     }
     Render(draw) {
-        draw.IsometricImage(this.Position, 'recyclage.png', "Unité de Recyclage");
+        draw.IsometricImage(this.Position, 'images/recyclage.png', "Unité de Recyclage");
     }
 }
 
@@ -157,7 +157,7 @@ export class ScienceLab extends BaseModule {
         }
     }
     Render(draw) {
-        draw.IsometricImage(this.Position, 'labo(1).png', this.Name);
+        draw.IsometricImage(this.Position, 'images/labo.png', this.Name);
     }
 }
 
@@ -168,6 +168,6 @@ export class JumpDrive extends BaseModule {
         this.CryptoCost = 0; // Special
     }
     Render(draw) {
-        draw.IsometricImage(this.Position, 'coeurTP.png');
+        draw.IsometricImage(this.Position, 'images/coeurTP.png');
     }
 }

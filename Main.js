@@ -1551,7 +1551,7 @@ class MyGame {
 
             // Rendu des météorites filantes (en arrière-plan du HUD)
             this.jumpMeteorites.forEach(m => {
-                const img = Draw._imageCache && Draw._imageCache['meteorite.png'];
+                const img = Draw._imageCache && Draw._imageCache['images/meteorite.png'];
                 if (img && img.complete) {
                     ctx.save();
                     ctx.translate(m.x, m.y);
@@ -1570,7 +1570,7 @@ class MyGame {
                     ctx.restore();
                 } else {
                     // Force le chargement de l'image si pas encore prête
-                    Draw.IsometricImage({ x: 9999, z: 9999 }, 'meteorite.png');
+                    Draw.IsometricImage({ x: 9999, z: 9999 }, 'images/meteorite.png');
                 }
             });
 

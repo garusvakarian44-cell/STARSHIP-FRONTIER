@@ -11,7 +11,7 @@ export class DroneHangar extends BaseModule {
         this.drones = []; // Drones déployés (instances de Drone)
     }
     Render(draw) {
-        draw.IsometricImage(this.Position, 'drone_module.png', "Hangar");
+        draw.IsometricImage(this.Position, 'images/drone_module.png', "Hangar");
     }
 }
 
@@ -57,7 +57,7 @@ export class Asteroid {
     }
 
     Render(draw) {
-        draw.IsometricImage(this.Position, 'meteorite.png', '');
+        draw.IsometricImage(this.Position, 'images/meteorite.png', '');
     }
 }
 
@@ -128,7 +128,7 @@ export class Drone {
 
     Render(draw) {
         if (this.state !== 'idle') {
-            draw.IsometricImage(this.Position, 'drone.png', '');
+            draw.IsometricImage(this.Position, 'images/drone.png', '');
         }
     }
 }
