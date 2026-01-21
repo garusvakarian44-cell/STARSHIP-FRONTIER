@@ -159,8 +159,10 @@ class MyGame {
             }
 
             // Musique du menu (si on est encore sur l'écran titre)
-            if (!this.isGameStarted && !this.isMenuMusicPlaying) {
+            if (!this.isGameStarted && !this.isMenuMusicPlaying && !this.isMenuMusicLoading) {
+                this.isMenuMusicLoading = true;
                 this.menuMusic.play().then(() => {
+                    this.isMenuMusicLoading = false;
                     if (this.isGameStarted) {
                         this.menuMusic.pause();
                         this.isMenuMusicPlaying = false;
@@ -168,7 +170,8 @@ class MyGame {
                         this.isMenuMusicPlaying = true;
                     }
                 }).catch(e => {
-                    // Toujours bloqué par le navigateur
+                    this.isMenuMusicLoading = false;
+                    // Toujours bloqué par le navigateur, on réessaiera au prochain clic
                 });
             }
         };
